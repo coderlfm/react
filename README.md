@@ -3,8 +3,12 @@
 阅读之前先找到入口 `packages/react/src/React.js`
 
 导航
-- [React.createElemet](#React.createElemet)
-- [React.Component](#React.Component)
+
+[React.createElemet](#React.createElemet)
+
+[React.Component](#React.Component)
+
+[React.CreateRef](#React.CreateRef)
 
 ## React.createElemet
 在入口文件 `React.js` 中可以看到， `createElement` 是在 `ReactElement.js` 中导出的
@@ -103,3 +107,23 @@ pureComponentPrototype.isPureReactComponent = true;
 `ReactBaseClasses.js` 中出了 定义了 `Component` 和 `PureComponent`外还定义了 我们在类组件中更新数据时调用 `setState()`, 以及强制更新函数 `forceUpdate()`,
 但是这些方法具体的实现并没有在 `ReactBaseClasses.js`，这里最主要是做了一些属性的承载
  
+
+## React.CreateRef
+
+字符串 ref 和回调函数的 ref 方式这里先不详细深入
+此处主要先看 通过 `React.CreateRef()` 的方式来创建 ref
+
+该代码实现在 `ReactCreateRef.js` 中，代码也很少，
+
+``` js
+// 最主要返回了一个一个对象，对象中有一个 current 属性
+export function createRef(): RefObject {
+  const refObject = {
+    current: null,
+  };
+  if (__DEV__) {
+    Object.seal(refObject);
+  }
+  return refObject;
+}
+```
