@@ -43,6 +43,8 @@ export function forwardRef<Props, ElementType: React$ElementType>(
     }
   }
 
+  
+  // 此处的 $$typeof 是在 createElement 中是 type.$$typeof
   const elementType = {
     $$typeof: REACT_FORWARD_REF_TYPE,
     render,

@@ -4,9 +4,9 @@
 
 导航
 
-[React.createElemet](#React.createElemet)
+[React.createElemet](#reactcreateElemet)
 
-[React.Component](#React.Component)
+[React.Component](#reactcomponent)
 
 [React.CreateRef](#React.CreateRef)
 
@@ -116,7 +116,7 @@ pureComponentPrototype.isPureReactComponent = true;
 该代码实现在 `ReactCreateRef.js` 中，代码也很少，
 
 ``` js
-// 最主要返回了一个一个对象，对象中有一个 current 属性
+// 最主要返回了一个对象，对象中有一个 current 属性
 export function createRef(): RefObject {
   const refObject = {
     current: null,
@@ -126,4 +126,30 @@ export function createRef(): RefObject {
   }
   return refObject;
 }
+```
+
+
+## React.forwardRef
+该部分源码在 `ReactForwardRef.js`
+forwardRef可以帮助我们做ref转发，
+一般 ref 是用来获取 真实dom或者 组件实例的，但是函数组件没有实例，所以
+可以通过 forwardRef 来做 ref 转发
+
+``` js
+
+export function forwardRef<Props, ElementType: React$ElementType>(
+  render: (props: Props, ref: React$Ref<ElementType>) => React$Node,
+) {
+
+  // if (__DEV__) ...
+  // 此处的 $$typeof 是在 createElement 中是 type.$$typeof
+  const elementType = {
+    $$typeof: REACT_FORWARD_REF_TYPE,
+    render,
+  };
+  // if (__DEV__) ...
+
+  return elementType;
+}
+
 ```
