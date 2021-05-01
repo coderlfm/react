@@ -444,13 +444,13 @@ export function createElement(type, config, children) {
 
   // 最终调用 ReactElement 来创建元素 
   return ReactElement(
-    type,
-    key,
-    ref,
-    self,
-    source,
+    type, // 元素类型
+    key,  // key
+    ref,  // 元素 ref
+    self, // 自身
+    source, // 记录谁创建的该元素
     ReactCurrentOwner.current,
-    props,
+    props,  // 元素属性，以及 children
   );
 }
 
