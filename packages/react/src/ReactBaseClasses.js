@@ -21,12 +21,15 @@ function Component(props, context, updater) {
   this.props = props;
   this.context = context;
   // If a component has string refs, we will assign a different object later.
+  // 这个 refs 就是 字符串的 ref 的方式
   this.refs = emptyObject;
   // We initialize the default updater but the real one gets injected by the
   // renderer.
+  // updater 此处作为参数传入，但是我们在编写组件的一般没有写，这个 updater 在不同平台的实现方式不太一样，例如 React Native，所以这里需要作为参数
   this.updater = updater || ReactNoopUpdateQueue;
 }
 
+// 表示这是一个 React 组件
 Component.prototype.isReactComponent = {};
 
 /**
@@ -134,6 +137,7 @@ function PureComponent(props, context, updater) {
   this.updater = updater || ReactNoopUpdateQueue;
 }
 
+// 主要是继承了 Component 并且新增 isPureReactComponent 属性
 const pureComponentPrototype = (PureComponent.prototype = new ComponentDummy());
 pureComponentPrototype.constructor = PureComponent;
 // Avoid an extra prototype jump for these methods.
