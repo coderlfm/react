@@ -48,19 +48,28 @@ export type LazyComponent<T, P> = {
   _init: (payload: P) => T,
 };
 
+// 异步加载模块
 function lazyInitializer<T>(payload: Payload<T>): T {
+
+  // 如果当前未初始化
   if (payload._status === Uninitialized) {
     const ctor = payload._result;
     const thenable = ctor();
-    // Transition to the next state.
+    // Transition to the next state. //转换到下一个状态。 (pending)
     const pending: PendingPayload = (payload: any);
     pending._status = Pending;
     pending._result = thenable;
+
+    // 调用 .then 拿到模块对象
     thenable.then(
+      // 成功的回调
       moduleObject => {
+
+        // 如果处于 pending 状态，则取到模块对象导出的 default 对象
         if (payload._status === Pending) {
           const defaultExport = moduleObject.default;
           if (__DEV__) {
+            // 如果没有默认导出则报错
             if (defaultExport === undefined) {
               console.error(
                 'lazy: Expected the result of a dynamic import() call. ' +
@@ -72,15 +81,18 @@ function lazyInitializer<T>(payload: Payload<T>): T {
               );
             }
           }
-          // Transition to the next state.
+
+          // Transition to the next state. //转换到下一个状态。 (resolved) 成功
           const resolved: ResolvedPayload<T> = (payload: any);
           resolved._status = Resolved;
           resolved._result = defaultExport;
         }
       },
+      // 错误的回调
       error => {
         if (payload._status === Pending) {
-          // Transition to the next state.
+          
+          // Transition to the next state. //转换到下一个状态。 (rejected) 失败
           const rejected: RejectedPayload = (payload: any);
           rejected._status = Rejected;
           rejected._result = error;
@@ -88,6 +100,7 @@ function lazyInitializer<T>(payload: Payload<T>): T {
       },
     );
   }
+  // 如果之前已经加载过，则直接返回结果
   if (payload._status === Resolved) {
     return payload._result;
   } else {
@@ -95,15 +108,28 @@ function lazyInitializer<T>(payload: Payload<T>): T {
   }
 }
 
+// lazy 接收一个函数，返回 LazyComponent ,这个 LazyComponent 是一个 promise
 export function lazy<T>(
   ctor: () => Thenable<{default: T, ...}>,
 ): LazyComponent<T, Payload<T>> {
+  
+  // _status 是当前异步组件的状态，pengdding 、成功、失败的状态会随之变化
+  /*   
+    const Uninitialized = -1;
+    const Pending = 0;
+    const Resolved = 1;
+    const Rejected = 2; 
+  */
+
+  // _result 是当前组件的异步加载结果，如果这个组件之前加载过，则直接使用 _result，在上处 lazyInitializer() 函数有体现
   const payload: Payload<T> = {
     // We use these fields to store the result.
     _status: -1,
     _result: ctor,
   };
 
+  // 其中包含以下内容，该版本和 16.7 的版本的返回内容有些不太一样，但是功能一致
+  // lazyInitializer 加载模块的函数
   const lazyType: LazyComponent<T, Payload<T>> = {
     $$typeof: REACT_LAZY_TYPE,
     _payload: payload,
