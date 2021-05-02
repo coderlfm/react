@@ -153,3 +153,52 @@ export function forwardRef<Props, ElementType: React$ElementType>(
 }
 
 ```
+
+## React.React.createText
+该api可以使我们将一些状态跨多个层级进行传递 `React.React.createText` 会返回 `Provider` 和 `Consumer`
+
+这个api的实现源码在 `ReactContext.js` 中
+
+``` js
+  const context: ReactContext<T> = {
+    $$typeof: REACT_CONTEXT_TYPE,
+    // As a workaround to support multiple concurrent renderers, we categorize
+    // some renderers as primary and others as secondary. We only expect
+    // there to be two concurrent renderers at most: React Native (primary) and
+    // Fabric (secondary); React DOM (primary) and React ART (secondary).
+    // Secondary renderers store their context values on separate fields.
+    // 用来存储值的属性
+    _currentValue: defaultValue,
+    _currentValue2: defaultValue,
+    // Used to track how many concurrent renderers this context currently
+    // supports within in a single renderer. Such as parallel server rendering.
+    _threadCount: 0,
+    // These are circular
+    Provider: (null: any),
+    Consumer: (null: any),
+  };
+
+  // 给 context.Provider 赋值并且让 _context 等于自身
+  context.Provider = {
+    $$typeof: REACT_PROVIDER_TYPE,
+    _context: context,
+  };
+
+  let hasWarnedAboutUsingNestedContextConsumers = false;
+  let hasWarnedAboutUsingConsumerProvider = false;
+  let hasWarnedAboutDisplayNameOnConsumer = false;
+
+  if (__DEV__) { ... } 
+  else {
+    // 给 context.Consumer 赋值 并且让它等于自身
+    context.Consumer = context;
+  }
+
+  if (__DEV__) {
+    context._currentRenderer = null;
+    context._currentRenderer2 = null;
+  }
+
+  return context;
+}
+```
