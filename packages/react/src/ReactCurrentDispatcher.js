@@ -17,7 +17,7 @@ const ReactCurrentDispatcher = {
    * @internal
    * @type {ReactComponent}
    */
-  current: (null: null | Dispatcher),
+  current: (null: null | Dispatcher), // 在渲染的时候会给它赋值
 };
 
 export default ReactCurrentDispatcher;

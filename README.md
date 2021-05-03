@@ -202,3 +202,62 @@ export function forwardRef<Props, ElementType: React$ElementType>(
   return context;
 }
 ```
+
+## useState 和 useEffect 简单阅读
+hooks 是 React 16.8 之后新增的特性，它可以让函数式组件可以保存状态，现在我们开发中用的比较多的也是这种
+
+hooks 源码在 `ReactHooks.js` 中
+
+
+``` js 
+export function useState<S>(
+  initialState: (() => S) | S,
+): [S, Dispatch<BasicStateAction<S>>] {
+  const dispatcher = resolveDispatcher();
+  return dispatcher.useState(initialState);
+}
+```
+
+``` js
+export function useEffect(
+  create: () => (() => void) | void,
+  deps: Array<mixed> | void | null,
+): void {
+  const dispatcher = resolveDispatcher();
+  return dispatcher.useEffect(create, deps);
+}
+```
+两个 hook 都调用了 `resolveDispatcher()` 来获取 `dispatcher` ，
+
+
+`resolveDispatcher()`
+``` js
+function resolveDispatcher() {
+  // 从 ReactCurrentDispatcher 中取出 current;
+  const dispatcher = ReactCurrentDispatcher.current;
+  // if (__DEV__) {...}
+  return ((dispatcher: any): Dispatcher);
+}
+```
+
+`resolveDispatcher()` 中从 ReactCurrentDispatcher 中取出 current;
+
+`ReactCurrentDispatcher` 在 `ReactCurrentDispatcher.js` 中有定义
+
+``` js
+// ReactCurrentDispatcher.js
+
+const ReactCurrentDispatcher = {
+  /**
+   * @internal
+   * @type {ReactComponent}
+   */
+  current: (null: null | Dispatcher),
+};
+
+export default ReactCurrentDispatcher;
+```
+
+这个 `ReactCurrentDispatcher` 的 `current` 是 `null`， 之前也困惑了好久为什么这里是 `null`，看完完整的源码后发现在渲染的时候其实有给这里赋值，在 react-dom 中
+
+
