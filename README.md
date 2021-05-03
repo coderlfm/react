@@ -260,4 +260,8 @@ export default ReactCurrentDispatcher;
 
 这个 `ReactCurrentDispatcher` 的 `current` 是 `null`， 之前也困惑了好久为什么这里是 `null`，看完完整的源码后发现在渲染的时候其实有给这里赋值，在 react-dom 中
 
+## React.Children 
+React.Children 可以帮我们操作 children 
+`React.Children(props.children, (c) => [c, c])` 这样可以让每个子元素都创建两个
 
+源码在 `ReactChildren.js` 中，已经写了注释，也可以直接在 demo 中打开调试进行调试来查看

@@ -65,6 +65,7 @@ const createElement = __DEV__ ? createElementWithValidation : createElementProd;
 const cloneElement = __DEV__ ? cloneElementWithValidation : cloneElementProd;
 const createFactory = __DEV__ ? createFactoryWithValidation : createFactoryProd;
 
+// 对 children 的操作
 const Children = {
   map,
   forEach,

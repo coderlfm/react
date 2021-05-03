@@ -1,8 +1,12 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
 
+import TestChildren from './demos/children'
+
 function App() {
-  return 'hello react'
+  return <>
+    <TestChildren />
+  </>
 }
 
 ReactDOM.render(

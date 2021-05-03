@@ -80,6 +80,7 @@ function mapIntoArray(
 ): number {
   const type = typeof children;
 
+  // 如果 子元素是空，则直接返回 null
   if (type === 'undefined' || type === 'boolean') {
     // All of the above are perceived as null.
     children = null;
@@ -90,6 +91,7 @@ function mapIntoArray(
   if (children === null) {
     invokeCallback = true;
   } else {
+    // 如果 children  是单节点 数字，字符串，单个 react 元素，则直接置为 true
     switch (type) {
       case 'string':
       case 'number':
@@ -104,21 +106,32 @@ function mapIntoArray(
     }
   }
 
+  // 如果是单节点
   if (invokeCallback) {
     const child = children;
+
+    // 调用 回调函数 (c) => [c,c] 
     let mappedChild = callback(child);
     // If it's the only child, treat the name as if it was wrapped in an array
     // so that it's consistent if the number of children grows:
+    //如果是唯一的子代，则将名称视为包裹在数组中
+    //，以使子项数量增加时保持一致：
     const childKey =
-      nameSoFar === '' ? SEPARATOR + getElementKey(child, 0) : nameSoFar;
+      nameSoFar === '' ? SEPARATOR + getElementKey(child, 0) : nameSoFar; // 给 child 添加 key
+      
     if (isArray(mappedChild)) {
       let escapedChildKey = '';
       if (childKey != null) {
         escapedChildKey = escapeUserProvidedKey(childKey) + '/';
       }
+      // 如果 children 是数组，则递归调用自己
       mapIntoArray(mappedChild, array, escapedChildKey, '', c => c);
+
+      // 如果 是单节点
     } else if (mappedChild != null) {
+      // 校验是否为有效元素
       if (isValidElement(mappedChild)) {
+        // 克隆一个元素并且替换为新 key
         mappedChild = cloneAndReplaceKey(
           mappedChild,
           // Keep both the (mapped) and old keys if they differ, just as
@@ -132,8 +145,12 @@ function mapIntoArray(
             childKey,
         );
       }
+      
+      // 将 children push 到数组中
       array.push(mappedChild);
     }
+    
+    // 单节点返回1， children 为数组时 递归调用的时候会叠加
     return 1;
   }
 
@@ -143,10 +160,14 @@ function mapIntoArray(
   const nextNamePrefix =
     nameSoFar === '' ? SEPARATOR : nameSoFar + SUBSEPARATOR;
 
+  // children 是数组
   if (isArray(children)) {
     for (let i = 0; i < children.length; i++) {
+      // 从数组中取出每一个元素
       child = children[i];
+      // 获取一个key
       nextName = nextNamePrefix + getElementKey(child, i);
+      //  递归调用自己
       subtreeCount += mapIntoArray(
         child,
         array,
@@ -157,6 +178,8 @@ function mapIntoArray(
     }
   } else {
     const iteratorFn = getIteratorFn(children);
+    
+    // 如果 children 是函数
     if (typeof iteratorFn === 'function') {
       const iterableChildren: Iterable<React$Node> & {
         entries: any,
@@ -175,6 +198,7 @@ function mapIntoArray(
         }
       }
 
+      // 是函数则会调用这个函数
       const iterator = iteratorFn.call(iterableChildren);
       let step;
       let ii = 0;
@@ -189,6 +213,8 @@ function mapIntoArray(
           callback,
         );
       }
+      
+      // 如果是对象，则报错
     } else if (type === 'object') {
       const childrenString = '' + (children: any);
       invariant(
@@ -231,7 +257,11 @@ function mapChildren(
   }
   const result = [];
   let count = 0;
+  
+  // 调用 mapIntoArray
   mapIntoArray(children, result, '', '', function(child) {
+    // 调用 React.Children.map(children, (c) => [c,c])
+    // (c) => [c,c]   如果这样写，则会返回两个 children
     return func.call(context, child, count++);
   });
   return result;
