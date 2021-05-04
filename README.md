@@ -366,3 +366,95 @@ function legacyRenderSubtreeIntoContainer(
 ![react-dom.render()](./assets/img/react-dom-render().png);
 
 调试时在 render 方法内部设置断点开始调试
+
+
+fiberRoot 属性
+```  js
+export type FiberRoot = {
+  // ...BaseFiberRootProperties,
+
+  // The type of root (legacy, batched, concurrent, etc.)
+  // 根的类型（旧版，批处理，并发等）
+  tag: RootTag,
+
+  // Any additional information from the host associated with this root.
+  // 根容器，render方法接收的第二个参数
+  containerInfo: any,
+
+  // 只有在持久更新中会用到，也就是不支持增量更新的平台，react-dom不会用到
+  // Used only by persistent updates.
+  pendingChildren: any,
+  
+  // The currently active root fiber. This is the mutable root of the tree.
+  //  当前应用对应的Fiber对象，是Root Fiber
+  current: Fiber,
+
+  pingCache: WeakMap<Wakeable, Set<mixed>> | Map<Wakeable, Set<mixed>> | null,
+
+  // A finished work-in-progress HostRoot that's ready to be committed.
+  // 已经完成的任务的FiberRoot对象，如果你只有一个Root，那他永远只可能是这个Root对应的Fiber，或者是null
+  // 在commit阶段只会处理这个值对应的任务
+  finishedWork: Fiber | null,
+
+  // Timeout handle returned by setTimeout. Used to cancel a pending timeout, if
+  // it's superseded by a new one.
+  // 在任务被挂起的时候通过setTimeout设置的返回内容，用来下一次如果有新的任务挂起时清理还没触发的timeout
+  timeoutHandle: TimeoutHandle | NoTimeout,
+
+  // Top context object, used by renderSubtreeIntoContainer
+  // 顶层context对象，只有主动调用`renderSubtreeIntoContainer`时才会有用
+  context: Object | null,
+
+  pendingContext: Object | null,
+  
+  // Determines if we should attempt to hydrate on the initial mount
+  ////确定是否应该在初始安装时尝试合并
+  +hydrate: boolean,
+
+  // Used by useMutableSource hook to avoid tearing during hydration.
+  // 由useMutableSource挂钩使用，以避免在合并过程中撕裂。
+  mutableSourceEagerHydrationData?: Array<
+    MutableSource<any> | MutableSourceVersion,
+  > | null,
+
+  // Node returned by Scheduler.scheduleCallback. Represents the next rendering
+  // task that the root will work on.
+  //Scheduler.scheduleCallback返回的节点。代表下一个渲染
+  //根将要执行的任务。 
+  callbackNode: *,
+  callbackPriority: Lane,
+  eventTimes: LaneMap<number>,
+
+  // 当前更新对应的过期时间
+  expirationTimes: LaneMap<number>,
+
+  pendingLanes: Lanes,
+  suspendedLanes: Lanes,
+  pingedLanes: Lanes,
+  expiredLanes: Lanes,
+  mutableReadLanes: Lanes,
+
+  finishedLanes: Lanes,
+
+  entangledLanes: Lanes,
+  entanglements: LaneMap<Lanes>,
+
+  pooledCache: Cache | null,
+  pooledCacheLanes: Lanes,
+  
+
+  //以下字段仅由enableSuspenseCallback用于水合。 
+  // ...SuspenseCallbackOnlyFiberRootProperties,
+   hydrationCallbacks: null | SuspenseHydrationCallbacks,
+
+
+  //以下属性仅由DevTools使用，并且仅在DEV版本中存在。
+  //通过它们，DevTools Profiler UI可以显示哪些光纤计划了给定的提交。  
+  // ...UpdaterTrackingOnlyFiberRootProperties,
+  memoizedUpdaters: Set<Fiber>,
+  pendingUpdatersLaneMap: LaneMap<Set<Fiber>>,
+  ...
+};
+
+
+```

@@ -252,6 +252,7 @@ export function createContainer(
   strictModeLevelOverride: null | number,
   concurrentUpdatesByDefaultOverride: null | boolean,
 ): OpaqueRoot {
+  // 创建 FiberRoot
   return createFiberRoot(
     containerInfo,
     tag,

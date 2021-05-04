@@ -168,6 +168,7 @@ function legacyCreateRootFromDOMContainer(
     }
   }
 
+  // 创建根
   return createLegacyRoot(
     container,
     shouldHydrate
@@ -215,7 +216,7 @@ function legacyRenderSubtreeIntoContainer(
   // 第一次 render 的时候 _reactRootContainer 是空 
   let root = container._reactRootContainer;
   let fiberRoot: FiberRoot;
-  
+
   if (!root) {
     // Initial mount 初始化挂载，获取到 fiber 容器
     root = container._reactRootContainer = legacyCreateRootFromDOMContainer(
