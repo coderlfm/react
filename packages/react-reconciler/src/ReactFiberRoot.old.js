@@ -93,6 +93,8 @@ function FiberRootNode(containerInfo, tag, hydrate) {
   }
 }
 
+// 调用 createFiberRoot 创建 fiber容器
+// 第一次 render 的时候 只有 第一个和第二个参数有值 
 export function createFiberRoot(
   containerInfo: any,
   tag: RootTag,

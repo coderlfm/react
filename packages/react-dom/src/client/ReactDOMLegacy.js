@@ -95,32 +95,43 @@ function getReactRootElementInContainer(container: any) {
     return null;
   }
 
+  // 1 === 9 
   if (container.nodeType === DOCUMENT_NODE) {
     return container.documentElement;
   } else {
+    // 该值第一次 render 是 null
     return container.firstChild;
   }
 }
-
+// should Hydrate Due To Legacy Heuristic
 function shouldHydrateDueToLegacyHeuristic(container) {
   const rootElement = getReactRootElementInContainer(container);
+  
+  // 第一次 render 是 false
   return !!(
     rootElement &&
+    // 1  === 9
     rootElement.nodeType === ELEMENT_NODE &&
     rootElement.hasAttribute(ROOT_ATTRIBUTE_NAME)
   );
 }
 
+//  render 调用的时候 forceHydrate 传的是 false, forceHydrate 是 false, 服务端渲染的时候会传 true 
 function legacyCreateRootFromDOMContainer(
   container: Container,
   forceHydrate: boolean,
 ): RootType {
+
+  // 如果 forceHydrate 是 false 会调用后者，
+  // shouldHydrate： 是否复用上一次的 dom，主要是服务端渲染会使用，若非服务端渲染会返回 false
   const shouldHydrate =
     forceHydrate || shouldHydrateDueToLegacyHeuristic(container);
-  // First clear any existing content.
+  // First clear any existing content.  首先清除所有现有内容。
   if (!shouldHydrate) {
     let warned = false;
     let rootSibling;
+    
+    // 如果 容器内部原来有元素则进行清空，一般我们做的首屏loading就是这这里被清空的
     while ((rootSibling = container.lastChild)) {
       if (__DEV__) {
         if (
@@ -136,9 +147,16 @@ function legacyCreateRootFromDOMContainer(
           );
         }
       }
+
+      // 循环清空 容器内部元素，从最后一个元素开始清空
       container.removeChild(rootSibling);
     }
   }
+  
+  /* 如果当前是服务端渲染，
+    在React v18中调用ReactDOM.render()来混合服务器渲染的标记将停止工作。
+    如果你想要React附加到服务器HTML，那么用ReactDOM.hydrate()替换ReactDOM.render()调用。
+   */
   if (__DEV__) {
     if (shouldHydrate && !forceHydrate && !warnedAboutHydrateAPI) {
       warnedAboutHydrateAPI = true;
@@ -173,6 +191,15 @@ function warnOnInvalidCallback(callback: mixed, callerName: string): void {
   }
 }
 
+/* 第一次 render 时
+  return legacyRenderSubtreeIntoContainer(
+    null,
+    element,
+    container,
+    false,
+    callback,
+  );
+*/ 
 function legacyRenderSubtreeIntoContainer(
   parentComponent: ?React$Component<any, any>,
   children: ReactNodeList,
@@ -185,15 +212,19 @@ function legacyRenderSubtreeIntoContainer(
     warnOnInvalidCallback(callback === undefined ? null : callback, 'render');
   }
 
+  // 第一次 render 的时候 _reactRootContainer 是空 
   let root = container._reactRootContainer;
   let fiberRoot: FiberRoot;
+  
   if (!root) {
-    // Initial mount
+    // Initial mount 初始化挂载，获取到 fiber 容器
     root = container._reactRootContainer = legacyCreateRootFromDOMContainer(
       container,
       forceHydrate,
     );
+    
     fiberRoot = root._internalRoot;
+
     if (typeof callback === 'function') {
       const originalCallback = callback;
       callback = function() {
@@ -201,8 +232,9 @@ function legacyRenderSubtreeIntoContainer(
         originalCallback.call(instance);
       };
     }
-    // Initial mount should not be batched.
+    // Initial mount should not be batched. 初始安装不应分批。 
     unbatchedUpdates(() => {
+      // <App />, fiberRoot, null, undefined
       updateContainer(children, fiberRoot, parentComponent, callback);
     });
   } else {
@@ -214,7 +246,7 @@ function legacyRenderSubtreeIntoContainer(
         originalCallback.call(instance);
       };
     }
-    // Update
+    // Update  批量更新
     updateContainer(children, fiberRoot, parentComponent, callback);
   }
   return getPublicRootInstance(fiberRoot);
@@ -283,11 +315,15 @@ export function hydrate(
   );
 }
 
+// 渲染入口
+// render(<App />, document.getElementById('root'))
 export function render(
   element: React$Element<any>,
   container: Container,
   callback: ?Function,
 ) {
+
+  // 校验容器是否有效
   invariant(
     isValidContainer(container),
     'Target container is not a DOM element.',
@@ -304,6 +340,15 @@ export function render(
       );
     }
   }
+  
+  // 调用 legacyRenderSubtreeIntoContainer()
+  /* function legacyRenderSubtreeIntoContainer(
+    parentComponent: ?React$Component<any, any>,
+    children: ReactNodeList,
+    container: Container,
+    forceHydrate: boolean,
+    callback: ?Function,
+  ) */
   return legacyRenderSubtreeIntoContainer(
     null,
     element,

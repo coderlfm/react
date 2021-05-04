@@ -265,3 +265,104 @@ React.Children 可以帮我们操作 children
 `React.Children(props.children, (c) => [c, c])` 这样可以让每个子元素都创建两个
 
 源码在 `ReactChildren.js` 中，已经写了注释，也可以直接在 demo 中打开调试进行调试来查看
+
+<br/>
+<br/>
+
+# React-dom
+
+## ReactDOM.render
+`render` 方法的源码在  `packages\react-dom\src\client\ReactDOMLegacy.js`中
+
+``` js
+export function render(
+  element: React$Element<any>,
+  container: Container,
+  callback: ?Function,
+) {
+
+  // 校验容器是否有效
+  invariant(
+    isValidContainer(container),
+    'Target container is not a DOM element.',
+  );
+  // if (__DEV__) { ... }
+  
+  /* 
+    调用 legacyRenderSubtreeIntoContainer()
+    function legacyRenderSubtreeIntoContainer(
+      parentComponent: ?React$Component<any, any>,
+      children: ReactNodeList,
+      container: Container,
+      forceHydrate: boolean,
+      callback: ?Function,
+    ) */
+  return legacyRenderSubtreeIntoContainer(
+    null,
+    element,
+    container,
+    false,
+    callback,
+  );
+}
+```
+可以看到 render 方法内部只是对 legacyRenderSubtreeIntoContainer进行了调用
+
+``` js
+function legacyRenderSubtreeIntoContainer(
+  parentComponent: ?React$Component<any, any>,
+  children: ReactNodeList,
+  container: Container,
+  forceHydrate: boolean,
+  callback: ?Function,
+) {
+  // if (__DEV__) { ... }
+
+  // 第一次 render 的时候 _reactRootContainer 是空 
+  let root = container._reactRootContainer;
+  let fiberRoot: FiberRoot;
+
+  if (!root) {
+    // Initial mount 初始化挂载，获取到 fiber 容器
+    root = container._reactRootContainer = legacyCreateRootFromDOMContainer(
+      container,
+      forceHydrate,
+    );
+    
+    fiberRoot = root._internalRoot;
+
+    if (typeof callback === 'function') {
+      const originalCallback = callback;
+      callback = function() {
+        const instance = getPublicRootInstance(fiberRoot);
+        originalCallback.call(instance);
+      };
+    }
+    // Initial mount should not be batched. 初始安装不应分批。 
+    unbatchedUpdates(() => {
+      // <App />, fiberRoot, null, undefined
+      updateContainer(children, fiberRoot, parentComponent, callback);
+    });
+  } else {
+    fiberRoot = root._internalRoot;
+    if (typeof callback === 'function') {
+      const originalCallback = callback;
+      callback = function() {
+        const instance = getPublicRootInstance(fiberRoot);
+        originalCallback.call(instance);
+      };
+    }
+    // Update  批量更新
+    updateContainer(children, fiberRoot, parentComponent, callback);
+  }
+
+  return getPublicRootInstance(fiberRoot);
+}
+```
+
+在 `legacyRenderSubtreeIntoContainer()` 方法可以看到 创建 fiber`(legacyCreateRootFromDOMContainer())` 和更新 `(updateContainer())` 的 过程 
+
+源码笔记
+![react-dom.render()](./assets/img/react-dom-render().png);
+
+调试时在 render 方法内部设置断点开始调试

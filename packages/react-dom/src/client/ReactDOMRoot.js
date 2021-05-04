@@ -60,6 +60,7 @@ function ReactDOMRoot(container: Container, options: void | RootOptions) {
 }
 
 function ReactDOMLegacyRoot(container: Container, options: void | RootOptions) {
+  // export const LegacyRoot = 0;  LegacyRoot 为 0
   this._internalRoot = createRootImpl(container, LegacyRoot, options);
 }
 
@@ -109,11 +110,13 @@ ReactDOMRoot.prototype.unmount = ReactDOMLegacyRoot.prototype.unmount = function
   });
 };
 
+// 初始化rendr 时 options 的值是 { hydrate: true, } 和 undefined，非服务端渲染时是 undefined
 function createRootImpl(
   container: Container,
   tag: RootTag,
   options: void | RootOptions,
 ) {
+
   // Tag is either LegacyRoot or Concurrent Root
   const hydrate = options != null && options.hydrate === true;
   const hydrationCallbacks =
@@ -135,15 +138,23 @@ function createRootImpl(
         ? options.unstable_concurrentUpdatesByDefault
         : null;
   }
-
+  
+  
+  // 此处开始创建 fiberRoot
   const root = createContainer(
     container,
-    tag,
+    tag, // 0
+    // 初次 render 时 以下都是 null
     hydrate,
     hydrationCallbacks,
     strictModeLevelOverride,
     concurrentUpdatesByDefaultOverride,
   );
+
+  /* 将该容器标记为根, 内部是给容器身上添加一个一个随机数属性 
+  node[internalContainerInstanceKey] = hostRoot;
+  container[__reactContainer$+Math.random().toString(36).slice(2)] = root.current;
+  */
   markContainerAsRoot(root.current, container);
 
   const rootContainerElement =
@@ -172,6 +183,7 @@ export function createRoot(
   return new ReactDOMRoot(container, options);
 }
 
+// legacyRenderSubtreeIntoContainer 方法底部调用该方法来创建 fiber 根节点
 export function createLegacyRoot(
   container: Container,
   options?: RootOptions,

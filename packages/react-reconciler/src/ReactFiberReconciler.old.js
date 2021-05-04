@@ -243,6 +243,7 @@ function findHostInstanceWithWarning(
   return findHostInstance(component);
 }
 
+// 开始创建 biber 容器
 export function createContainer(
   containerInfo: Container,
   tag: RootTag,
