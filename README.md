@@ -458,3 +458,6 @@ export type FiberRoot = {
 
 
 ```
+## 创建fiber
+创建 fiber 的源代码可以接着以上 从 `ReactUpdateQueue.old.js` 中 的`createContainer()` 开始看，创建根 fiber 以及当前节点 的 fiber 都写了注释
+

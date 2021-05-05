@@ -110,6 +110,8 @@ if (__DEV__) {
 
 let debugCounter = 1;
 
+// fiber节点构造函数 
+// HostRoot：3, null, null, mode：0 
 function FiberNode(
   tag: WorkTag,
   pendingProps: mixed,
@@ -202,8 +204,9 @@ function FiberNode(
 //    is faster.
 // 5) It should be easy to port this to a C struct and keep a C implementation
 //    compatible.
+// HostRoot：3, null, null, mode：0 第一次render 传入的参数
 const createFiber = function(
-  tag: WorkTag,
+  tag: WorkTag, // 第一次 renden 是 0
   pendingProps: mixed,
   key: null | string,
   mode: TypeOfMode,
@@ -420,12 +423,15 @@ export function resetWorkInProgress(workInProgress: Fiber, renderLanes: Lanes) {
   return workInProgress;
 }
 
+// 进行一些简单的判断来 设置 mode 是否并发模式
 export function createHostRootFiber(
   tag: RootTag,
   strictModeLevelOverride: null | number,
   concurrentUpdatesByDefaultOverride: null | boolean,
 ): Fiber {
   let mode;
+  
+  // 第一次 render tag = 0；
   if (tag === ConcurrentRoot) {
     mode = ConcurrentMode;
     if (strictModeLevelOverride !== null) {
@@ -454,6 +460,7 @@ export function createHostRootFiber(
       mode |= ConcurrentUpdatesByDefaultMode;
     }
   } else {
+    // 0b000000 二进制的 0
     mode = NoMode;
   }
 
@@ -464,6 +471,7 @@ export function createHostRootFiber(
     mode |= ProfileMode;
   }
 
+  // 开始创建
   return createFiber(HostRoot, null, null, mode);
 }
 
