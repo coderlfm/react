@@ -10,7 +10,7 @@ export default function Wrap() {
 }
 
 function Children({ children }) {
-  debugger;
+  // debugger;
   console.log(React.Children.map(children, c => [c,c]));
   return React.Children.map(children, c => [c,c])
 }

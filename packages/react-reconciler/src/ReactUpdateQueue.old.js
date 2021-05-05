@@ -200,6 +200,7 @@ export function cloneUpdateQueue<State>(
   }
 }
 
+// 创建一个更新对象 68070.60499998624 , 1 
 export function createUpdate(eventTime: number, lane: Lane): Update<*> {
   const update: Update<*> = {
     eventTime,
@@ -227,6 +228,7 @@ export function enqueueUpdate<State>(
 
   const sharedQueue: SharedQueue<State> = (updateQueue: any).shared;
 
+  // 进入 elese
   if (isInterleavedUpdate(fiber, lane)) {
     const interleaved = sharedQueue.interleaved;
     if (interleaved === null) {
@@ -241,14 +243,17 @@ export function enqueueUpdate<State>(
     }
     sharedQueue.interleaved = update;
   } else {
+    
     const pending = sharedQueue.pending;
     if (pending === null) {
-      // This is the first update. Create a circular list.
+      // This is the first update. Create a circular list. 这是第一次更新。创建一个循环列表。
       update.next = update;
     } else {
       update.next = pending.next;
       pending.next = update;
     }
+    
+    // 将 pending 设置为当前更新，会同时给 fiber.updateQueue.shared 设置,该值第一次是 null
     sharedQueue.pending = update;
   }
 

@@ -263,16 +263,19 @@ export function createContainer(
   );
 }
 
+// 
 export function updateContainer(
-  element: ReactNodeList,
-  container: OpaqueRoot,
+  element: ReactNodeList,   // 虚拟dom ，第一次 render 的时候是 APP
+  container: OpaqueRoot,    // FiberRoot 
   parentComponent: ?React$Component<any, any>,
   callback: ?Function,
 ): Lane {
   if (__DEV__) {
     onScheduleRoot(container, element);
   }
+  // 拿到当前的 fiber 节点
   const current = container.current;
+  // 获取一次时间，第一次 render 时会获取当前的时间   
   const eventTime = requestEventTime();
   if (__DEV__) {
     // $FlowExpectedError - jest isn't a global, and isn't recognized outside of tests
@@ -281,12 +284,15 @@ export function updateContainer(
       warnIfNotScopedWithMatchingAct(current);
     }
   }
+  
+  // 创建一个更新等级，第一次 render 会返回 1 
   const lane = requestUpdateLane(current);
 
   if (enableSchedulingProfiler) {
     markRenderScheduled(lane);
   }
 
+  // 第一次 render 时 parentComponent ，会返回一个空对象
   const context = getContextForSubtree(parentComponent);
   if (container.context === null) {
     container.context = context;
@@ -295,6 +301,7 @@ export function updateContainer(
   }
 
   if (__DEV__) {
+    
     if (
       ReactCurrentFiberIsRendering &&
       ReactCurrentFiberCurrent !== null &&
@@ -311,9 +318,23 @@ export function updateContainer(
     }
   }
 
-  const update = createUpdate(eventTime, lane);
+  // 创建一个更新对象
+  /* 
+  {
+    eventTime,
+    lane,
+
+    tag: UpdateState,
+    payload: null,
+    callback: null,
+
+    next: null,
+  } 
+  */
+  const update = createUpdate(eventTime, lane); // 68070.60499998624 , 1 
   // Caution: React DevTools currently depends on this property
   // being called "element".
+  // 将 App 的虚拟 dom 挂载到 payload 上
   update.payload = {element};
 
   callback = callback === undefined ? null : callback;
@@ -330,7 +351,10 @@ export function updateContainer(
     update.callback = callback;
   }
 
+  // 入队更新，准备更新
   enqueueUpdate(current, update, lane);
+
+  // 开始调度更新
   const root = scheduleUpdateOnFiber(current, lane, eventTime);
   if (root !== null) {
     entangleTransitions(root, current, lane);

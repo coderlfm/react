@@ -42,8 +42,11 @@ let getCurrentTime;
 const hasPerformanceNow =
   typeof performance === 'object' && typeof performance.now === 'function';
 
+// Scheduler 中 now 方法的实现，校验浏览器是否支持 performance 对象
 if (hasPerformanceNow) {
   const localPerformance = performance;
+  
+/*   performance.now()是当前时间与performance.timing.navigationStart的时间差，以微秒（百万分之一秒）为单位的时间，与 Date.now()-performance.timing.navigationStart的区别是不受系统程序执行阻塞的影响，因此更加精准 */
   getCurrentTime = () => localPerformance.now();
 } else {
   const localDate = Date;

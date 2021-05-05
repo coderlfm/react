@@ -358,6 +358,7 @@ export function getWorkInProgressRoot(): FiberRoot | null {
   return workInProgressRoot;
 }
 
+// 计算一次时间
 export function requestEventTime() {
   if ((executionContext & (RenderContext | CommitContext)) !== NoContext) {
     // We're inside React, so it's fine to read the actual time.
@@ -369,6 +370,7 @@ export function requestEventTime() {
     return currentEventTime;
   }
   // This is the first update since React yielded. Compute a new start time.
+  // 这是自React产生以来的第一次更新。计算新的开始时间。 
   currentEventTime = now();
   return currentEventTime;
 }
@@ -379,8 +381,10 @@ export function getCurrentTime() {
 
 export function requestUpdateLane(fiber: Fiber): Lane {
   // Special cases
-  const mode = fiber.mode;
+  const mode = fiber.mode; // 第一次是 8
+  // 第一次 render 8 & 0 === 0 
   if ((mode & ConcurrentMode) === NoMode) {
+    // 同步赛道 返回1
     return (SyncLane: Lane);
   } else if (
     !deferRenderPhaseUpdateToNextBatch &&

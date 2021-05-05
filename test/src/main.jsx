@@ -9,7 +9,7 @@ function App() {
   </>
 }
 
-// debugger;
+debugger;
 ReactDOM.render(
   <App />,
   document.getElementById('root')
