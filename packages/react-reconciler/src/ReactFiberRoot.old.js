@@ -29,6 +29,7 @@ import {
 import {initializeUpdateQueue} from './ReactUpdateQueue.old';
 import {LegacyRoot, ConcurrentRoot} from './ReactRootTags';
 
+// 根节点 fiber 构造函数
 function FiberRootNode(containerInfo, tag, hydrate) {
   this.tag = tag;
   this.containerInfo = containerInfo;
@@ -103,6 +104,7 @@ export function createFiberRoot(
   strictModeLevelOverride: null | number,
   concurrentUpdatesByDefaultOverride: null | boolean,
 ): FiberRoot {
+  // 创建一个 根fiber 节点
   const root: FiberRoot = (new FiberRootNode(containerInfo, tag, hydrate): any);
   if (enableSuspenseCallback) {
     root.hydrationCallbacks = hydrationCallbacks;
@@ -110,11 +112,13 @@ export function createFiberRoot(
 
   // Cyclic construction. This cheats the type system right now because
   // stateNode is any.
+  // 创建一个 fiber 节点
   const uninitializedFiber = createHostRootFiber(
     tag,
     strictModeLevelOverride,
     concurrentUpdatesByDefaultOverride,
   );
+  // 将 fiber 节点挂载到 current 身上
   root.current = uninitializedFiber;
   uninitializedFiber.stateNode = root;
 
@@ -133,6 +137,7 @@ export function createFiberRoot(
     uninitializedFiber.memoizedState = initialState;
   }
 
+  // 创建一个更新，将当前 fiber 传进去
   initializeUpdateQueue(uninitializedFiber);
 
   return root;

@@ -163,7 +163,10 @@ if (__DEV__) {
   };
 }
 
+// 初始化更新对象
 export function initializeUpdateQueue<State>(fiber: Fiber): void {
+  
+  // 创建一个更新，并将其挂载到 fiber 节点的 updateQueue 身上
   const queue: UpdateQueue<State> = {
     baseState: fiber.memoizedState,
     firstBaseUpdate: null,

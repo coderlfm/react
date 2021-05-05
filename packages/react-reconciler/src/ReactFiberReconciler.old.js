@@ -246,7 +246,7 @@ function findHostInstanceWithWarning(
 // 开始创建 biber 容器
 export function createContainer(
   containerInfo: Container,
-  tag: RootTag,
+  tag: RootTag,// 第一次 render 是 0
   hydrate: boolean,
   hydrationCallbacks: null | SuspenseHydrationCallbacks,
   strictModeLevelOverride: null | number,
