@@ -263,7 +263,7 @@ export function createContainer(
   );
 }
 
-// 
+// 更新
 export function updateContainer(
   element: ReactNodeList,   // 虚拟dom ，第一次 render 的时候是 APP
   container: OpaqueRoot,    // FiberRoot 

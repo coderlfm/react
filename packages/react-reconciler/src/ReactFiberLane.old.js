@@ -69,6 +69,7 @@ export const NoLanePriority: LanePriority = 0;
 // Lane values below should be kept in sync with getLabelsForLanes(), used by react-devtools-scheduling-profiler.
 // If those values are changed that package should be rebuilt and redeployed.
 
+// react 跟新等级一共 31 个，位数越小，更新层级越高
 export const TotalLanes = 31;
 
 export const NoLanes: Lanes = /*                        */ 0b0000000000000000000000000000000;
@@ -599,6 +600,8 @@ export function isSubsetOfLanes(set: Lanes, subset: Lanes | Lane) {
   return (set & subset) === subset;
 }
 
+// 有关 按位或，按位与的信息 可以点击 http://c.biancheng.net/view/5469.html
+// 合并赛道，只要有一个是1，那就是1
 export function mergeLanes(a: Lanes | Lane, b: Lanes | Lane): Lanes {
   return a | b;
 }
@@ -658,15 +661,28 @@ export function markRootUpdated(
   // We don't do this if the incoming update is idle, because we never process
   // idle updates until after all the regular updates have finished; there's no
   // way it could unblock a transition.
+
+  /* 如果有任何暂停的过渡，则此新更新可能会取消阻止它们。 清除暂停的车道，以便我们可以尝试再次渲染它们。
+
+  TODO：实际上，我们只需要取消挂起更新光纤的“ subtreeLanes”中的通道或返回路径的更新通道即可。 
+  这将排除不相关的同级树中的暂挂更新，此更新无法解除阻止。
+
+  如果传入的更新是空闲的，则不执行此操作，因为直到所有常规更新都完成后，我们才处理空闲的更新。 它不可能解开过渡。  */
+  
+  // 如果不相对 则把以下设置为 0
   if (updateLane !== IdleLane) {
     root.suspendedLanes = NoLanes;
     root.pingedLanes = NoLanes;
   }
 
+  // 31 个时间戳
   const eventTimes = root.eventTimes;
+  // 根据 更新等级返回 索引
   const index = laneToIndex(updateLane);
   // We can always overwrite an existing timestamp because we prefer the most
   // recent event, and we assume time is monotonically increasing.
+  // 这个索引可能会被覆盖
+  // 我们总是可以覆盖现有时间戳，因为我们更喜欢最近的事件，并且我们假设时间在单调增加。
   eventTimes[index] = eventTime;
 }
 

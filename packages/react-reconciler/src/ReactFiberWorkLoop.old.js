@@ -454,14 +454,17 @@ function requestRetryLane(fiber: Fiber) {
   return claimNextRetryLane();
 }
 
+// 开始调度更新
 export function scheduleUpdateOnFiber(
   fiber: Fiber,
   lane: Lane,
   eventTime: number,
 ): FiberRoot | null {
+  // 检查是否有嵌套更新 > 50 次更新
   checkForNestedUpdates();
   warnAboutRenderPhaseUpdatesInDEV(fiber);
 
+  //标记从 fiber 到根的更新通道，如果是根节点则 则会返回自身
   const root = markUpdateLaneFromFiberToRoot(fiber, lane);
   if (root === null) {
     warnAboutUpdateOnUnmountedFiberInDEV(fiber);
@@ -524,6 +527,7 @@ export function scheduleUpdateOnFiber(
     }
   }
 
+  // 如果当更新是同步更新的赛道  第一次 render 是 同步更新
   if (lane === SyncLane) {
     if (
       // Check if we're inside unbatchedUpdates
@@ -560,15 +564,16 @@ export function scheduleUpdateOnFiber(
 
 // This is split into a separate function so we can mark a fiber with pending
 // work without treating it as a typical update that originates from an event;
-// e.g. retrying a Suspense boundary isn't an update, but it does schedule work
+// e.g. retrying a Suspense boundary isn't an update, but it does schedule work on a fiber.
 // on a fiber.
+// 标记从光纤到根的更新通道
 function markUpdateLaneFromFiberToRoot(
   sourceFiber: Fiber,
   lane: Lane,
 ): FiberRoot | null {
   // Update the source fiber's lanes
-  sourceFiber.lanes = mergeLanes(sourceFiber.lanes, lane);
-  let alternate = sourceFiber.alternate;
+  sourceFiber.lanes = mergeLanes(sourceFiber.lanes, lane);  // 按位或,只要其中一个值是 1， 则返回 1
+  let alternate = sourceFiber.alternate;      // 取到 alternate ，第一次是 null
   if (alternate !== null) {
     alternate.lanes = mergeLanes(alternate.lanes, lane);
   }
@@ -582,7 +587,9 @@ function markUpdateLaneFromFiberToRoot(
   }
   // Walk the parent path to the root and update the child lanes.
   let node = sourceFiber;
-  let parent = sourceFiber.return;
+  let parent = sourceFiber.return;    // 当前 fiber 节点的 return 会指向 父节点，如果是根节点则是 null
+
+  // 如果是 根节点 则是 null
   while (parent !== null) {
     parent.childLanes = mergeLanes(parent.childLanes, lane);
     alternate = parent.alternate;
@@ -598,7 +605,17 @@ function markUpdateLaneFromFiberToRoot(
     node = parent;
     parent = parent.return;
   }
+
+  // 是否为根节点
   if (node.tag === HostRoot) {
+    // 如果是根节点则将其身上的  stateNode 返回
+    /* stateNode 的赋值， 可以在 ReactFiberRoot.old.js 中 createFiberRoot() 方法中找到
+    // 将 fiber 节点挂载到 current 身上
+    root.current = uninitializedFiber;
+
+    // 将根节点的 stateNode 设置为 自身
+    uninitializedFiber.stateNode = root; 
+    */
     const root: FiberRoot = node.stateNode;
     return root;
   } else {
@@ -2359,6 +2376,7 @@ function jnd(timeElapsed: number) {
     : ceil(timeElapsed / 1960) * 1960;
 }
 
+// 检查嵌套更新, 循环更新超过 50级则进行提示
 function checkForNestedUpdates() {
   if (nestedUpdateCount > NESTED_UPDATE_LIMIT) {
     nestedUpdateCount = 0;

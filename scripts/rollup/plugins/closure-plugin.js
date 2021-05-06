@@ -6,6 +6,9 @@ const fs = require('fs');
 const tmp = require('tmp');
 const writeFileAsync = promisify(fs.writeFile);
 
+// compilerPackage.compiler.JAR_PATH = undefined;
+// compilerPackage.compiler.prototype.javaPath = './node_modules/.bin/closure-gun'
+
 function compile(flags) {
   return new Promise((resolve, reject) => {
     const closureCompiler = new ClosureCompiler(flags);

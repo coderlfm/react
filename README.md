@@ -10,6 +10,10 @@
 
 [React.CreateRef](#React.CreateRef)
 
+## 老的 fiber 架构 和 新的 fiber 架构
+在 react 15 中，
+
+
 ## React.createElemet
 在入口文件 `React.js` 中可以看到， `createElement` 是在 `ReactElement.js` 中导出的
 
@@ -460,4 +464,41 @@ export type FiberRoot = {
 ```
 ## 创建fiber
 创建 fiber 的源代码可以接着以上 从 `ReactUpdateQueue.old.js` 中 的`createContainer()` 开始看，创建根 fiber 以及当前节点 的 fiber 都写了注释
+
+## 调度更新
+从 `ReactUpdateQueue.old.js`  中的 `updateContainer()` 里面调用 `scheduleUpdateOnFiber()` 处开始调度更新  
+
+``` js
+export function updateContainer(
+  element: ReactNodeList,   // 虚拟dom ，第一次 render 的时候是 APP
+  container: OpaqueRoot,    // FiberRoot 
+  parentComponent: ?React$Component<any, any>,
+  callback: ?Function,
+): Lane {
+  // 拿到当前的 fiber 节点
+  const current = container.current;
+
+  // 创建一个更新等级，第一次 render 会返回 1 
+  const lane = requestUpdateLane(current);
+
+  // 获取一次时间，第一次 render 时会获取当前的时间   
+  const eventTime = requestEventTime();
+  ...
+
+  // 开始调度更新
+  const root = scheduleUpdateOnFiber(current, lane, eventTime);
+  
+  ...
+
+}
+
+```
+里面涉及到一些 按位或，按位与的操作 可以点击 http://c.biancheng.net/view/5469.html
+
+## lanes
+react 为不同的更新划分了不同的层级
+一共有 31 个 层级，源码中是使用 二进制来表示， 源码位置在 `ReactFiberLane.old.js`
+
+也可以在 [在线源码](https://github.com/facebook/react/blob/master/packages/react-reconciler/src/ReactFiberLane.old.js#L31) 中查看
+
 

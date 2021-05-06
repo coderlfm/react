@@ -120,6 +120,8 @@ export function createFiberRoot(
   );
   // 将 fiber 节点挂载到 current 身上
   root.current = uninitializedFiber;
+
+  // 将根节点的 stateNode 设置为 自身
   uninitializedFiber.stateNode = root;
 
   if (enableCache) {
