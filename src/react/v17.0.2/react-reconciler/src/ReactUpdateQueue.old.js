@@ -168,6 +168,7 @@ export function initializeUpdateQueue<State>(fiber: Fiber): void {
   
   // 创建一个更新，并将其挂载到 fiber 节点的 updateQueue 身上
   const queue: UpdateQueue<State> = {
+    // 初始值
     baseState: fiber.memoizedState,
     firstBaseUpdate: null,
     lastBaseUpdate: null,
@@ -178,9 +179,11 @@ export function initializeUpdateQueue<State>(fiber: Fiber): void {
     },
     effects: null,
   };
+  // 给 fiber对象上 添加一个 updateQueue 
   fiber.updateQueue = queue;
 }
 
+// 克隆更新队列
 export function cloneUpdateQueue<State>(
   current: Fiber,
   workInProgress: Fiber,
@@ -221,12 +224,15 @@ export function enqueueUpdate<State>(
   update: Update<State>,
   lane: Lane,
 ) {
+  // 从 fiber 中取到  updateQueue，每个 fiber 对象都会有一个 updateQueue
+  // 给 updateQueue 赋 初始值的操作在 当前文件的 initializeUpdateQueue() 方法中
   const updateQueue = fiber.updateQueue;
   if (updateQueue === null) {
     // Only occurs if the fiber has been unmounted.
     return;
   }
 
+  // 从更新队列中 取到 shared
   const sharedQueue: SharedQueue<State> = (updateQueue: any).shared;
 
   // 进入 elese
@@ -246,6 +252,8 @@ export function enqueueUpdate<State>(
   } else {
     
     const pending = sharedQueue.pending;
+
+    // 第一次更新的 pending 是null
     if (pending === null) {
       // This is the first update. Create a circular list. 这是第一次更新。创建一个循环列表。
       update.next = update;
@@ -381,6 +389,7 @@ export function enqueueCapturedUpdate<State>(
   queue.lastBaseUpdate = capturedUpdate;
 }
 
+// 从更新中获取状态 
 function getStateFromUpdate<State>(
   workInProgress: Fiber,
   queue: UpdateQueue<State>,
@@ -453,6 +462,13 @@ function getStateFromUpdate<State>(
         // Null and undefined are treated as no-ops.
         return prevState;
       }
+      /* 
+        第一次 render 会直接走到这里 将 payload 进行合并
+        cache: Map(0) {}
+        element: null
+
+        element: {$$typeof: Symbol(react.element)}
+       */
       // Merge the partial state and the previous state.
       return Object.assign({}, prevState, partialState);
     }
@@ -484,6 +500,8 @@ export function processUpdateQueue<State>(
 
   // Check if there are pending updates. If so, transfer them to the base queue.
   let pendingQueue = queue.shared.pending;
+
+  // 第一次 render 时是 null
   if (pendingQueue !== null) {
     queue.shared.pending = null;
 
@@ -535,6 +553,8 @@ export function processUpdateQueue<State>(
 
     let update = firstBaseUpdate;
     do {
+
+      // 取到 更新赛道 和 时间
       const updateLane = update.lane;
       const updateEventTime = update.eventTime;
       if (!isSubsetOfLanes(renderLanes, updateLane)) {
@@ -561,6 +581,7 @@ export function processUpdateQueue<State>(
         newLanes = mergeLanes(newLanes, updateLane);
       } else {
         // This update does have sufficient priority.
+        // 此更新确实具有足够的优先级。
 
         if (newLastBaseUpdate !== null) {
           const clone: Update<State> = {
@@ -579,6 +600,7 @@ export function processUpdateQueue<State>(
           newLastBaseUpdate = newLastBaseUpdate.next = clone;
         }
 
+        // 获取新状态
         // Process this update.
         newState = getStateFromUpdate(
           workInProgress,
@@ -599,10 +621,12 @@ export function processUpdateQueue<State>(
           }
         }
       }
+      // 第一次 render 的 next 是 null
       update = update.next;
       if (update === null) {
         pendingQueue = queue.shared.pending;
         if (pendingQueue === null) {
+          // 说明此次更新已完成
           break;
         } else {
           // An update was scheduled from inside a reducer. Add the new
@@ -619,6 +643,7 @@ export function processUpdateQueue<State>(
       }
     } while (true);
 
+    // 将新的 state 存下来
     if (newLastBaseUpdate === null) {
       newBaseState = newState;
     }
@@ -630,6 +655,7 @@ export function processUpdateQueue<State>(
     // Interleaved updates are stored on a separate queue. We aren't going to
     // process them during this render, but we do need to track which lanes
     // are remaining.
+    // 第一次 render 以下的怕判断都不会进去
     const lastInterleaved = queue.shared.interleaved;
     if (lastInterleaved !== null) {
       let interleaved = lastInterleaved;
@@ -652,6 +678,7 @@ export function processUpdateQueue<State>(
     // that regardless.
     markSkippedUpdateLanes(newLanes);
     workInProgress.lanes = newLanes;
+    // 将新的 state 设置为 旧的 state
     workInProgress.memoizedState = newState;
   }
 

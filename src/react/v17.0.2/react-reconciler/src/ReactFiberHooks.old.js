@@ -402,12 +402,14 @@ export function renderWithHooks<Props, SecondArg>(
       ReactCurrentDispatcher.current = HooksDispatcherOnMountInDEV;
     }
   } else {
+    // current = null 会 取到 HooksDispatcherOnMount
     ReactCurrentDispatcher.current =
       current === null || current.memoizedState === null
         ? HooksDispatcherOnMount
         : HooksDispatcherOnUpdate;
   }
 
+  // 调用函数式组件 传入 props 取到 renturn 的结果 函数式组件的 vdom
   let children = Component(props, secondArg);
 
   // Check if there was a render phase update
@@ -523,7 +525,7 @@ export function renderWithHooks<Props, SecondArg>(
       }
     }
   }
-
+  // 将 children 返回 / 函数式组件的 vdom
   return children;
 }
 

@@ -121,22 +121,27 @@ function FiberNode(
   // Instance
   this.tag = tag;
   this.key = key;
+  // createElement 时第一个参数 ，type
   this.elementType = null;
+
+  // 异步组件resolved之后返回的内容，一般是`function`或者`class`
   this.type = null;
+
+  // 对应的这个节点的真实 dom
   this.stateNode = null;
 
   // Fiber
-  this.return = null;
-  this.child = null;
-  this.sibling = null;
-  this.index = 0;
+  this.return = null;   // 当前节点的 父节点
+  this.child = null;    // 当前节点的 子节点
+  this.sibling = null;  // 当前节点的 兄弟节点(后一个节点)
+  this.index = 0;       // 当前节点的 索引(用于更新时候的复用)
 
   this.ref = null;
 
-  this.pendingProps = pendingProps;
-  this.memoizedProps = null;
-  this.updateQueue = null;
-  this.memoizedState = null;
+  this.pendingProps = pendingProps; // 新的 props
+  this.memoizedProps = null;        // 旧的(上一次) props
+  this.updateQueue = null;          // 当前 fiber 的更新队列
+  this.memoizedState = null;        // 旧的(上一次) state
   this.dependencies = null;
 
   this.mode = mode;
@@ -149,6 +154,8 @@ function FiberNode(
   this.lanes = NoLanes;
   this.childLanes = NoLanes;
 
+  // 记录着上一次的 fiber
+  // 每次渲染结束后 会交换位置， current《====》 alternate 不需要平凡
   this.alternate = null;
 
   if (enableProfilerTimer) {
@@ -245,13 +252,24 @@ export function resolveLazyComponentTag(Component: Function): WorkTag {
 
 // This is used to create an alternate fiber to do work on.
 export function createWorkInProgress(current: Fiber, pendingProps: any): Fiber {
-  let workInProgress = current.alternate;
+
+  // 先取到 旧的 alternate
+  let workInProgress = current.alternate; 
+
+  // 如果当前只有一个 fiber ，只有在第一次render 的时候才是 null
   if (workInProgress === null) {
     // We use a double buffering pooling technique because we know that we'll
     // only ever need at most two versions of a tree. We pool the "other" unused
     // node that we're free to reuse. This is lazily created to avoid allocating
     // extra objects for things that are never updated. It also allow us to
     // reclaim the extra memory if needed.
+    // 这里会创建一个 fiber createFiber() 代码实现在以上
+    /* 第一次 render 是 
+      3
+      null
+      null
+      2 
+    */
     workInProgress = createFiber(
       current.tag,
       pendingProps,
@@ -270,6 +288,7 @@ export function createWorkInProgress(current: Fiber, pendingProps: any): Fiber {
       workInProgress._debugHookTypes = current._debugHookTypes;
     }
 
+    // 指向自身
     workInProgress.alternate = current;
     current.alternate = workInProgress;
   } else {
@@ -471,12 +490,12 @@ export function createHostRootFiber(
     mode |= ProfileMode;
   }
 
-  // 开始创建
+  // 开始创建一个 RootFiber
   return createFiber(HostRoot, null, null, mode);
 }
 
 export function createFiberFromTypeAndProps(
-  type: any, // React$ElementType
+  type: any, // React$ElementType     类组件是 class 函数组件时 函数本身
   key: null | string,
   pendingProps: any,
   owner: null | Fiber,
@@ -487,6 +506,7 @@ export function createFiberFromTypeAndProps(
   // The resolved type is set if we know what the final type will be. I.e. it's not lazy.
   let resolvedType = type;
   if (typeof type === 'function') {
+    // 判断是否 类组件
     if (shouldConstruct(type)) {
       fiberTag = ClassComponent;
       if (__DEV__) {
@@ -624,6 +644,8 @@ export function createFiberFromElement(
   const type = element.type;
   const key = element.key;
   const pendingProps = element.props;
+
+  // createFiberFromTypeAndProps() 方法实现就在以上
   const fiber = createFiberFromTypeAndProps(
     type,
     key,

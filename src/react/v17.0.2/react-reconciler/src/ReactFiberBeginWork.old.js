@@ -260,6 +260,7 @@ export function reconcileChildren(
     // won't update its child set by applying minimal side-effects. Instead,
     // we will add them all to the child before it gets rendered. That means
     // we can optimize this reconciliation pass by not tracking side-effects.
+    // 给 workInProgress 添加 child属性
     workInProgress.child = mountChildFibers(
       workInProgress,
       null,
@@ -273,6 +274,8 @@ export function reconcileChildren(
 
     // If we had any progressed work already, that is invalid at this point so
     // let's throw it out.
+
+    // 将 workInProgress 的 child fiber 挂载到 .child 上 
     workInProgress.child = reconcileChildFibers(
       workInProgress,
       current.child,
@@ -1138,7 +1141,9 @@ function pushHostRootContext(workInProgress) {
   pushHostContainer(workInProgress, root.containerInfo);
 }
 
+// 更新根组件
 function updateHostRoot(current, workInProgress, renderLanes) {
+  // 暂时没看
   pushHostRootContext(workInProgress);
   const updateQueue = workInProgress.updateQueue;
   invariant(
@@ -1147,15 +1152,21 @@ function updateHostRoot(current, workInProgress, renderLanes) {
       'bailed out. This error is likely caused by a bug in React. Please ' +
       'file an issue.',
   );
+  // 取到旧的 props 和 新的 props
   const nextProps = workInProgress.pendingProps;
   const prevState = workInProgress.memoizedState;
   const prevChildren = prevState.element;
+
+  // 克隆更新队列
   cloneUpdateQueue(current, workInProgress);
+  // 计算到新的 state
   processUpdateQueue(workInProgress, nextProps, null, renderLanes);
+  // 取到新的 state
   const nextState = workInProgress.memoizedState;
 
   const root: FiberRoot = workInProgress.stateNode;
-
+  
+  // 启用缓存， 暂时没看
   if (enableCache) {
     const nextCache: Cache = nextState.cache;
     pushRootCachePool(root);
@@ -1173,6 +1184,7 @@ function updateHostRoot(current, workInProgress, renderLanes) {
     resetHydrationState();
     return bailoutOnAlreadyFinishedWork(current, workInProgress, renderLanes);
   }
+
   if (root.hydrate && enterHydrationState(workInProgress)) {
     // If we don't have any current children this might be the first pass.
     // We always try to hydrate. If this isn't a hydration pass there won't
@@ -1213,11 +1225,16 @@ function updateHostRoot(current, workInProgress, renderLanes) {
       node = node.sibling;
     }
   } else {
+    // 第一次 render 进入到这里
     // Otherwise reset hydration state in case we aborted and resumed another
     // root.
+    // 调和 children
+    // 给 workInProgress 创建了 child
     reconcileChildren(current, workInProgress, nextChildren, renderLanes);
     resetHydrationState();
   }
+
+  // 将 workInProgress 的 child 返回
   return workInProgress.child;
 }
 
@@ -1435,6 +1452,7 @@ function mountIncompleteClassComponent(
   );
 }
 
+// 挂载不确定 tag 的组件
 function mountIndeterminateComponent(
   _current,
   workInProgress,
@@ -1500,6 +1518,8 @@ function mountIndeterminateComponent(
     );
     setIsRendering(false);
   } else {
+    // 第一次 render 时的 第二次循环 beginwork会进入到这里，因为 app 的类型不确定
+    // 得到函数式组件的 vdom
     value = renderWithHooks(
       null,
       workInProgress,
@@ -1599,6 +1619,7 @@ function mountIndeterminateComponent(
     );
   } else {
     // Proceed under the assumption that this is a function component
+    // 第一次 render 的第二次 循环会进入到这里 因为 app 组件的 chilren 还是一个 函数式组件
     workInProgress.tag = FunctionComponent;
     if (__DEV__) {
       if (disableLegacyContext && Component.contextTypes) {
@@ -1628,10 +1649,14 @@ function mountIndeterminateComponent(
         }
       }
     }
+
+    // 给 workInProgress 添加 child 属性内部再循环创建子的 fiber 对象
     reconcileChildren(null, workInProgress, value, renderLanes);
     if (__DEV__) {
       validateFunctionComponentInDev(workInProgress, Component);
     }
+
+
     return workInProgress.child;
   }
 }
@@ -3222,9 +3247,11 @@ function beginWork(
       }
     }
 
+    // 取到 旧的 props 和新的 props
     const oldProps = current.memoizedProps;
     const newProps = workInProgress.pendingProps;
 
+    // 如果 props 或者 context 发生改变
     if (
       oldProps !== newProps ||
       hasLegacyContextChanged() ||
@@ -3233,6 +3260,7 @@ function beginWork(
     ) {
       // If props or context changed, mark the fiber as having performed work.
       // This may be unset if the props are determined to be equal later (memo).
+      // 第一次 render 会进入这里
       didReceiveUpdate = true;
     } else if (!includesSomeLane(renderLanes, updateLanes)) {
       didReceiveUpdate = false;
@@ -3472,7 +3500,11 @@ function beginWork(
   // move this assignment out of the common path and into each branch.
   workInProgress.lanes = NoLanes;
 
+  debugger;
+  
+  // 判断是哪一个 tag 类型
   switch (workInProgress.tag) {
+    // 不确定的 tag  类型
     case IndeterminateComponent: {
       return mountIndeterminateComponent(
         current,
@@ -3521,7 +3553,7 @@ function beginWork(
         renderLanes,
       );
     }
-    case HostRoot:
+    case HostRoot:  //root 组件 会返回 workInProgress.child;
       return updateHostRoot(current, workInProgress, renderLanes);
     case HostComponent:
       return updateHostComponent(current, workInProgress, renderLanes);

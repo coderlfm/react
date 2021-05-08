@@ -213,18 +213,21 @@ function legacyRenderSubtreeIntoContainer(
     warnOnInvalidCallback(callback === undefined ? null : callback, 'render');
   }
 
-  // 第一次 render 的时候 _reactRootContainer 是空 
+  // 第一次 render 的时候 _reactRootContainer 是空  
   let root = container._reactRootContainer;
   let fiberRoot: FiberRoot;
 
   if (!root) {
     // Initial mount 初始化挂载，获取到 fiber 容器
+    // 同时给 容器的 _reactRootContainer 赋上 fiberRoot 对象，下次进来就会走到 else 
     root = container._reactRootContainer = legacyCreateRootFromDOMContainer(
       container,
       forceHydrate,
     );
     
-    fiberRoot = root._internalRoot;
+    // 因为 FiberRoot 实际是添加在 _internalRoot 身上的，所以要从 _internalRoot 身上取下来
+    // 源码实现 ./ReactDOMRoot.js 中 ReactDOMLegacyRoot()
+    fiberRoot = root._internalRoot; 
 
     if (typeof callback === 'function') {
       const originalCallback = callback;

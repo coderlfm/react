@@ -245,14 +245,16 @@ function getHighestPriorityLanes(lanes: Lanes | Lane): Lanes {
 
 export function getNextLanes(root: FiberRoot, wipLanes: Lanes): Lanes {
   // Early bailout if there's no pending work left.
-  const pendingLanes = root.pendingLanes;
-  if (pendingLanes === NoLanes) {
-    return_highestLanePriority = NoLanePriority;
+
+  // 第一次是 1
+  const pendingLanes = root.pendingLanes; 
+  if (pendingLanes === NoLanes) { 
+    return_highestLanePriority = NoLanePriority;  
     return NoLanes;
   }
 
-  let nextLanes = NoLanes;
-  let nextLanePriority = NoLanePriority;
+  let nextLanes = NoLanes;  // 0b0000000000000000000000000000000
+  let nextLanePriority = NoLanePriority;  // 0
 
   const suspendedLanes = root.suspendedLanes;
   const pingedLanes = root.pingedLanes;
@@ -676,6 +678,11 @@ export function markRootUpdated(
   }
 
   // 31 个时间戳
+  /*
+  * 假设 lanes：0b000100
+  * 那么eventTimes是这种形式： [ -1, -1, -1, 44573.3452, -1, -1 ]
+  * 用一个数组去存储eventTimes，-1表示空位，非-1的位置与lanes中的1的位置相同
+  * */
   const eventTimes = root.eventTimes;
   // 根据 更新等级返回 索引
   const index = laneToIndex(updateLane);

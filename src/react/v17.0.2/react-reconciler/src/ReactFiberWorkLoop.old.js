@@ -460,11 +460,11 @@ export function scheduleUpdateOnFiber(
   lane: Lane,
   eventTime: number,
 ): FiberRoot | null {
-  // 检查是否有嵌套更新 > 50 次更新
+  // 检查是否有嵌套更新 > 50 次更新，校验是否有无限更新
   checkForNestedUpdates();
   warnAboutRenderPhaseUpdatesInDEV(fiber);
 
-  //标记从 fiber 到根的更新通道，如果是根节点则 则会返回自身
+  //标记从 fiber 到根的更新通道，如果是根节点则 则会返回自身  向上收集fiber.childLanes
   const root = markUpdateLaneFromFiberToRoot(fiber, lane);
   if (root === null) {
     warnAboutUpdateOnUnmountedFiberInDEV(fiber);
@@ -478,6 +478,7 @@ export function scheduleUpdateOnFiber(
   }
 
   // Mark that the root has a pending update.
+  // 在root上标记更新，将update的lane放到root.pendingLanes
   markRootUpdated(root, lane, eventTime);
 
   if (enableProfilerTimer && enableProfilerNestedUpdateScheduledHook) {
@@ -538,8 +539,17 @@ export function scheduleUpdateOnFiber(
       // This is a legacy edge case. The initial mount of a ReactDOM.render-ed
       // root inside of batchedUpdates should be synchronous, but layout updates
       // should be deferred until the end of the batch.
+
+      // 如果是本次更新是同步的，并且当前还未渲染，意味着主线程空闲，并没有React的
+      // 更新任务在执行，那么调用performSyncWorkOnRoot开始执行同步任务
+      // 第一次 render 会进入到这里
       performSyncWorkOnRoot(root);
     } else {
+
+      // 如果是本次更新是同步的，不过当前有React更新任务正在进行，
+      // 而且因为无法打断，所以调用ensureRootIsScheduled
+      // 目的是去复用已经在更新的任务，让这个已有的任务
+      // 把这次更新顺便做了
       ensureRootIsScheduled(root, eventTime);
       if (
         executionContext === NoContext &&
@@ -550,6 +560,7 @@ export function scheduleUpdateOnFiber(
         // scheduleCallbackForFiber to preserve the ability to schedule a callback
         // without immediately flushing it. We only do this for user-initiated
         // updates, to preserve historical behavior of legacy mode.
+        // 如果是更新是异步的，调用ensureRootIsScheduled去进入异步调度
         resetRenderTimer();
         flushSyncCallbacksOnlyInLegacyMode();
       }
@@ -589,7 +600,7 @@ function markUpdateLaneFromFiberToRoot(
   let node = sourceFiber;
   let parent = sourceFiber.return;    // 当前 fiber 节点的 return 会指向 父节点，如果是根节点则是 null
 
-  // 如果是 根节点 则是 null
+  // 如果是 根节点 则是 null，该逻辑会向上收集 childLanes
   while (parent !== null) {
     parent.childLanes = mergeLanes(parent.childLanes, lane);
     alternate = parent.alternate;
@@ -972,6 +983,7 @@ function markRootSuspended(root, suspendedLanes) {
 
 // This is the entry point for synchronous tasks that don't go
 // through Scheduler
+// 第一次 render 的同步更新
 function performSyncWorkOnRoot(root) {
   if (enableProfilerTimer && enableProfilerNestedUpdatePhase) {
     syncNestedUpdateFlag();
@@ -981,7 +993,8 @@ function performSyncWorkOnRoot(root) {
     (executionContext & (RenderContext | CommitContext)) === NoContext,
     'Should not already be working.',
   );
-
+  
+  // 第一次会返回false，内部什么都不做
   flushPassiveEffects();
 
   let lanes = getNextLanes(root, NoLanes);
@@ -991,6 +1004,7 @@ function performSyncWorkOnRoot(root) {
     return null;
   }
 
+  // 同步渲染 root
   let exitStatus = renderRootSync(root, lanes);
   if (root.tag !== LegacyRoot && exitStatus === RootErrored) {
     executionContext |= RetryAfterError;
@@ -1226,7 +1240,10 @@ export function popRenderLanes(fiber: Fiber) {
   popFromStack(subtreeRenderLanesCursor, fiber);
 }
 
+// 准备渲染
 function prepareFreshStack(root: FiberRoot, lanes: Lanes) {
+
+  // 先将 finishedWork 置为 null
   root.finishedWork = null;
   root.finishedLanes = NoLanes;
 
@@ -1246,7 +1263,10 @@ function prepareFreshStack(root: FiberRoot, lanes: Lanes) {
       interruptedWork = interruptedWork.return;
     }
   }
+  // 记录 进行中的工作根，
   workInProgressRoot = root;
+
+  // 创建一个 fiber 这个位置就是 创建 fiber 时 说的 双重缓存
   workInProgress = createWorkInProgress(root.current, null);
   workInProgressRootRenderLanes = subtreeRenderLanes = workInProgressRootIncludedLanes = lanes;
   workInProgressRootExitStatus = RootIncomplete;
@@ -1325,6 +1345,7 @@ function handleError(root, thrownValue): void {
 }
 
 function pushDispatcher() {
+  // 第一次这个 current 是 null
   const prevDispatcher = ReactCurrentDispatcher.current;
   ReactCurrentDispatcher.current = ContextOnlyDispatcher;
   if (prevDispatcher === null) {
@@ -1398,10 +1419,15 @@ export function renderHasNotSuspendedYet(): boolean {
   return workInProgressRootExitStatus === RootIncomplete;
 }
 
+// 同步渲染 root
 function renderRootSync(root: FiberRoot, lanes: Lanes) {
+  // 第一次 render 是 这里拿到的是 4
   const prevExecutionContext = executionContext;
+  // 或等 等价于 executionContext = executionContext | RenderContext;
   executionContext |= RenderContext;
-  const prevDispatcher = pushDispatcher();
+
+  // 取到 dispatch，第一次是null，会取到一个 ContextOnlyDispatcher
+  const prevDispatcher = pushDispatcher();  
 
   // If the root or lanes have changed, throw out the existing stack
   // and prepare a fresh one. Otherwise we'll continue where we left off.
@@ -1422,6 +1448,7 @@ function renderRootSync(root: FiberRoot, lanes: Lanes) {
       }
     }
 
+    // 内部创建了  workInProgress
     prepareFreshStack(root, lanes);
   }
 
@@ -1580,18 +1607,24 @@ function performUnitOfWork(unitOfWork: Fiber): void {
   let next;
   if (enableProfilerTimer && (unitOfWork.mode & ProfileMode) !== NoMode) {
     startProfilerTimer(unitOfWork);
+    // 会得到 workInProgress.child; 就是 unitOfWork的 child
     next = beginWork(current, unitOfWork, subtreeRenderLanes);
     stopProfilerTimerIfRunningAndRecordDelta(unitOfWork, true);
   } else {
+    // 递归调用 beginWork
     next = beginWork(current, unitOfWork, subtreeRenderLanes);
   }
 
   resetCurrentDebugFiberInDEV();
+
+  // 将新的 props 设置为老的 props
   unitOfWork.memoizedProps = unitOfWork.pendingProps;
   if (next === null) {
     // If this doesn't spawn new work, complete the current work.
     completeUnitOfWork(unitOfWork);
   } else {
+
+    // 将当前 children 设置为 workInprogress，一直循环调用创建 fiber
     workInProgress = next;
   }
 

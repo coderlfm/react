@@ -59,6 +59,7 @@ function ReactDOMRoot(container: Container, options: void | RootOptions) {
   this._internalRoot = createRootImpl(container, ConcurrentRoot, options);
 }
 
+// 刚方法是一个构造方法，给实例身上添加一个 _internalRoot 属性 ，fiberRoot 实际添加在 _internalRoot 身上
 function ReactDOMLegacyRoot(container: Container, options: void | RootOptions) {
   // export const LegacyRoot = 0;  LegacyRoot 为 0
   this._internalRoot = createRootImpl(container, LegacyRoot, options);

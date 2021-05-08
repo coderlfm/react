@@ -34,9 +34,15 @@ function FiberRootNode(containerInfo, tag, hydrate) {
   this.tag = tag;
   this.containerInfo = containerInfo;
   this.pendingChildren = null;
+
+  // 这 current 是 rootFiber，也是整个fiber 的入口
   this.current = null;
+
   this.pingCache = null;
-  this.finishedWork = null;
+
+  // 已经完成的任务的FiberRoot对象，如果你只有一个Root，那他永远只可能是这个Root对应的Fiber，或者是null
+  // 在commit阶段只会处理这个值对应的任务
+  this.finishedWork = null;      
   this.timeoutHandle = noTimeout;
   this.context = null;
   this.pendingContext = null;
@@ -106,19 +112,20 @@ export function createFiberRoot(
 ): FiberRoot {
   // 创建一个 根fiber 节点
   const root: FiberRoot = (new FiberRootNode(containerInfo, tag, hydrate): any);
+  
   if (enableSuspenseCallback) {
     root.hydrationCallbacks = hydrationCallbacks;
   }
 
   // Cyclic construction. This cheats the type system right now because
   // stateNode is any.
-  // 创建一个 fiber 节点
+  // 创建一个 fiber 节点 FiberRoot
   const uninitializedFiber = createHostRootFiber(
     tag,
     strictModeLevelOverride,
     concurrentUpdatesByDefaultOverride,
   );
-  // 将 fiber 节点挂载到 current 身上
+  // 将 fiber 节点挂载到 current 身上 这个就是  FiberRoot
   root.current = uninitializedFiber;
 
   // 将根节点的 stateNode 设置为 自身
@@ -136,6 +143,8 @@ export function createFiberRoot(
     const initialState = {
       element: null,
     };
+
+    // 上一次的 state 
     uninitializedFiber.memoizedState = initialState;
   }
 

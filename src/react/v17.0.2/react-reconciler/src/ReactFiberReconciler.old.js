@@ -273,7 +273,7 @@ export function updateContainer(
   if (__DEV__) {
     onScheduleRoot(container, element);
   }
-  // 拿到当前的 fiber 节点
+  // 拿到当前的 fiber 节点 如果是 render 则拿到 RootFiber
   const current = container.current;
   // 获取一次时间，第一次 render 时会获取当前的时间   
   const eventTime = requestEventTime();

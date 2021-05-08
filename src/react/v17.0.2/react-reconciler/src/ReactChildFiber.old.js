@@ -350,6 +350,7 @@ function ChildReconciler(shouldTrackSideEffects) {
   function placeSingleChild(newFiber: Fiber): Fiber {
     // This is simpler for the single child case. We only need to do a
     // placement for inserting new children.
+    // 第一次 render 会进入判断
     if (shouldTrackSideEffects && newFiber.alternate === null) {
       newFiber.flags |= Placement;
     }
@@ -1090,6 +1091,7 @@ function ChildReconciler(shouldTrackSideEffects) {
     return created;
   }
 
+  // 调和单个元素
   function reconcileSingleElement(
     returnFiber: Fiber,
     currentFirstChild: Fiber | null,
@@ -1161,8 +1163,11 @@ function ChildReconciler(shouldTrackSideEffects) {
       created.return = returnFiber;
       return created;
     } else {
+      // 创建一个 fiber 对象
       const created = createFiberFromElement(element, returnFiber.mode, lanes);
       created.ref = coerceRef(returnFiber, currentFirstChild, element);
+
+      // 将该 fiber 对象的 rerurn 指向 父节点
       created.return = returnFiber;
       return created;
     }
@@ -1233,6 +1238,9 @@ function ChildReconciler(shouldTrackSideEffects) {
     // Handle object types
     if (typeof newChild === 'object' && newChild !== null) {
       switch (newChild.$$typeof) {
+
+        // 首次 render 时会进入到这里，通过createElement 创建的虚拟dom 都是 对象
+        // 先调和单个元素 ，会得到一个 当前元素的 fiber 对象
         case REACT_ELEMENT_TYPE:
           return placeSingleChild(
             reconcileSingleElement(
