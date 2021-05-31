@@ -249,6 +249,7 @@ if (__DEV__) {
   didWarnAboutDefaultPropsOnFunctionComponent = {};
 }
 
+// 调和 children 
 export function reconcileChildren(
   current: Fiber | null,
   workInProgress: Fiber,
@@ -1157,9 +1158,10 @@ function updateHostRoot(current, workInProgress, renderLanes) {
   const prevState = workInProgress.memoizedState;
   const prevChildren = prevState.element;
 
+  debugger;
   // 克隆更新队列
   cloneUpdateQueue(current, workInProgress);
-  // 计算到新的 state
+  // 计算到新的 state 给 memoizedState 添加上值  cache，element
   processUpdateQueue(workInProgress, nextProps, null, renderLanes);
   // 取到新的 state
   const nextState = workInProgress.memoizedState;
@@ -1168,6 +1170,7 @@ function updateHostRoot(current, workInProgress, renderLanes) {
   
   // 启用缓存， 暂时没看
   if (enableCache) {
+    // 拿到缓存
     const nextCache: Cache = nextState.cache;
     pushRootCachePool(root);
     pushCacheProvider(workInProgress, nextCache);
@@ -1254,8 +1257,11 @@ function updateHostComponent(
   const prevProps = current !== null ? current.memoizedProps : null;
 
   let nextChildren = nextProps.children;
+
+  // 是否只有一个文本子节点
   const isDirectTextChild = shouldSetTextContent(type, nextProps);
 
+  // 如果只有一个文本子节点，则不会给给文本子节点生成 fiber 节点
   if (isDirectTextChild) {
     // We special case a direct text child of a host node. This is a common
     // case. We won't handle it as a reified child. We will instead handle
@@ -3500,7 +3506,7 @@ function beginWork(
   // move this assignment out of the common path and into each branch.
   workInProgress.lanes = NoLanes;
 
-  debugger;
+  // debugger;
   
   // 判断是哪一个 tag 类型
   switch (workInProgress.tag) {

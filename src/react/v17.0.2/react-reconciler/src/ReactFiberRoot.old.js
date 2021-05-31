@@ -131,6 +131,7 @@ export function createFiberRoot(
   // 将根节点的 stateNode 设置为 自身
   uninitializedFiber.stateNode = root;
 
+  // 启用缓存
   if (enableCache) {
     const initialCache = new Map();
     root.pooledCache = initialCache;

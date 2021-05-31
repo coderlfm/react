@@ -29,6 +29,9 @@ export function pushInterleavedQueue(
 }
 
 export function enqueueInterleavedUpdates() {
+
+/*   将交错更新传输到主队列上。每个队列都有一个“挂起”字段和一个“交错”字段。
+  当它们不为空时，它们指向循环链表中的最后一个节点。我们需要将交叉列表添加到待处理列表的末尾，方法是将它们连接到一个单一的循环列表中。 */
   // Transfer the interleaved updates onto the main queue. Each queue has a
   // `pending` field and an `interleaved` field. When they are not null, they
   // point to the last node in a circular linked list. We need to append the

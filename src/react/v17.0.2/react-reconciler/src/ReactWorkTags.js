@@ -6,7 +6,7 @@
  *
  * @flow
  */
-
+// 所有的组件类型
 export type WorkTag =
   | 0
   | 1
@@ -41,8 +41,8 @@ export const ClassComponent = 1;          // 类组件
 export const IndeterminateComponent = 2; // Before we know whether it is function or class
 export const HostRoot = 3; // Root of a host tree. Could be nested inside another node.
 export const HostPortal = 4; // A subtree. Could be an entry point to a different renderer.
-export const HostComponent = 5;
-export const HostText = 6;
+export const HostComponent = 5;          // html 元素类型 
+export const HostText = 6;               // 文本节点
 export const Fragment = 7;
 export const Mode = 8;
 export const ContextConsumer = 9;

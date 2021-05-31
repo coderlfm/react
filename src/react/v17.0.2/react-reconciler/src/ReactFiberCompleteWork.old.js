@@ -204,7 +204,9 @@ if (supportsMutation) {
     // children to find all the terminal nodes.
     let node = workInProgress.child;
     while (node !== null) {
+      // 如果当前节点时 html 节点和
       if (node.tag === HostComponent || node.tag === HostText) {
+        // 将真实节点，追加到 父节点下
         appendInitialChild(parent, node.stateNode);
       } else if (node.tag === HostPortal) {
         // If we have a portal child, then we don't want to traverse
@@ -218,12 +220,16 @@ if (supportsMutation) {
       if (node === workInProgress) {
         return;
       }
+
+      // 如果没有兄弟节点了
       while (node.sibling === null) {
         if (node.return === null || node.return === workInProgress) {
           return;
         }
         node = node.return;
       }
+
+      // 如果还有兄弟节点，则把当前兄弟节点的 return 赋值一份给 兄弟节点的 return
       node.sibling.return = node.return;
       node = node.sibling;
     }
@@ -675,7 +681,7 @@ function bubbleProperties(completedWork: Fiber) {
     if (enableProfilerTimer && (completedWork.mode & ProfileMode) !== NoMode) {
       // In profiling mode, resetChildExpirationTime is also used to reset
       // profiler durations.
-      let actualDuration = completedWork.actualDuration;
+      let actualDuration = completedWork.actualDuration;  
       let treeBaseDuration = ((completedWork.selfBaseDuration: any): number);
 
       let child = completedWork.child;
@@ -695,12 +701,15 @@ function bubbleProperties(completedWork: Fiber) {
         // this value will reflect the amount of time spent working on a previous
         // render. In that case it should not bubble. We determine whether it was
         // cloned by comparing the child pointer.
+
+        // 实际渲染耗时每次都把子元素的渲染耗时进行叠加
         actualDuration += child.actualDuration;
 
         treeBaseDuration += child.treeBaseDuration;
         child = child.sibling;
       }
 
+      // 取到最终的渲染耗时
       completedWork.actualDuration = actualDuration;
       completedWork.treeBaseDuration = treeBaseDuration;
     } else {
@@ -782,6 +791,7 @@ function bubbleProperties(completedWork: Fiber) {
   return didBailout;
 }
 
+// 归 800 多行
 function completeWork(
   current: Fiber | null,
   workInProgress: Fiber,
@@ -894,6 +904,8 @@ function completeWork(
             markUpdate(workInProgress);
           }
         } else {
+          // 开始创建真实dom
+          // 并且给当前 真实dom 身上添加 fiber props 属性
           const instance = createInstance(
             type,
             newProps,
@@ -901,14 +913,17 @@ function completeWork(
             currentHostContext,
             workInProgress,
           );
-
+          
+          // 将当前元素的所有 children 添加到 当前元素下
           appendAllChildren(instance, workInProgress, false, false);
 
-          workInProgress.stateNode = instance;
+          // 记录当前的真实节点
+          workInProgress.stateNode = instance;  
 
           // Certain renderers require commit-time effects for initial mount.
           // (eg DOM renderer supports auto-focus for certain elements).
           // Make sure such renderers get scheduled for later work.
+          // 是否需要自动聚焦
           if (
             finalizeInitialChildren(
               instance,
@@ -1138,8 +1153,11 @@ function completeWork(
       bubbleProperties(workInProgress);
       return null;
     case ContextProvider:
+
+      // 组件类型为 provider 类型  provider 类型的组件 所有值都在 _context 身上
       // Pop provider fiber
       const context: ReactContext<any> = workInProgress.type._context;
+      // 内部会给 context._currentValue 赋值 
       popProvider(context, workInProgress);
       bubbleProperties(workInProgress);
       return null;

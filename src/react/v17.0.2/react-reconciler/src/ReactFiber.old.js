@@ -141,7 +141,7 @@ function FiberNode(
   this.pendingProps = pendingProps; // 新的 props
   this.memoizedProps = null;        // 旧的(上一次) props
   this.updateQueue = null;          // 当前 fiber 的更新队列
-  this.memoizedState = null;        // 旧的(上一次) state
+  this.memoizedState = null;        // 旧的(上一次) state 里面有缓存，react 使用的是 Map 作为缓存
   this.dependencies = null;
 
   this.mode = mode;
@@ -620,6 +620,8 @@ export function createFiberFromTypeAndProps(
     }
   }
 
+  // 给 当前元素创建一个 fiber 对象 
+  // 例如 给 app 创建
   const fiber = createFiber(fiberTag, pendingProps, key, mode);
   fiber.elementType = type;
   fiber.type = resolvedType;

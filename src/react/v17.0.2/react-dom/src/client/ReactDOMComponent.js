@@ -254,6 +254,13 @@ function getOwnerDocumentFromRootContainer(
 function noop() {}
 
 export function trapClickOnNonInteractiveElement(node: HTMLElement) {
+
+  // Mobile Safari不会正确地在非交互式元素上触发冒泡单击事件，这意味着委托的单击侦听器不会触发。
+  // 此bug的解决方案包括在目标节点上附加一个空的单击侦听器。
+  // https://www.quirksmode.org/blog/archives/2010/09/click_event_del.html
+  // 只需使用onclick属性设置它，这样我们就不必为它管理任何簿记。不确定侦听器被删除时是否需要清除它。
+  // TODO:只有相关的游猎才能这样做?
+  
   // Mobile Safari does not fire properly bubble click events on
   // non-interactive elements, which means delegated click listeners do not
   // fire. The workaround for this bug involves attaching an empty click
@@ -353,14 +360,16 @@ function updateDOMProperties(
   }
 }
 
+// 开始使用 虚拟 dom 创建真实 dom
 export function createElement(
   type: string,
   props: Object,
   rootContainerElement: Element | Document,
   parentNamespace: string,
 ): Element {
-  let isCustomComponentTag;
+  let isCustomComponentTag;   // 是否自定义标签
 
+  // 拿到 document 对象
   // We create tags in the namespace of their parent container, except HTML
   // tags get no namespace.
   const ownerDocument: Document = getOwnerDocumentFromRootContainer(
@@ -412,6 +421,8 @@ export function createElement(
       // Separate else branch instead of using `props.is || undefined` above because of a Firefox bug.
       // See discussion in https://github.com/facebook/react/pull/6896
       // and discussion in https://bugzilla.mozilla.org/show_bug.cgi?id=1276240
+
+      // 通过 document 对象创建 真实dom
       domElement = ownerDocument.createElement(type);
       // Normally attributes are assigned in `setInitialDOMProperties`, however the `multiple` and `size`
       // attributes on `select`s needs to be added before `option`s are inserted.
@@ -585,6 +596,8 @@ export function setInitialProperties(
       ReactDOMSelectPostMountWrapper(domElement, rawProps);
       break;
     default:
+
+      // 以下是为了兼容 Safari 浏览器在 非交互元素上不会触发冒泡事件做的空 onClick 的兼容
       if (typeof props.onClick === 'function') {
         // TODO: This cast may not be sound for SVG, MathML or custom elements.
         trapClickOnNonInteractiveElement(((domElement: any): HTMLElement));

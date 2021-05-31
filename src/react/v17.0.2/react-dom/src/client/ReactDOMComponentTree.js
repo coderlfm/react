@@ -33,6 +33,7 @@ import {getParentSuspenseInstance} from './ReactDOMHostConfig';
 import invariant from 'shared/invariant';
 import {enableScopeAPI} from 'shared/ReactFeatureFlags';
 
+// 取一个 0-1 的随机数，再转成 36 进制(a-z 0-9),再去掉前两位小数 0.2i116qjpu7p    一般是为了去重
 const randomKey = Math.random()
   .toString(36)
   .slice(2);
@@ -53,6 +54,7 @@ export function detachDeletedInstance(node: Instance): void {
   delete (node: any)[internalEventHandlesSetKey];
 }
 
+// 给真实 dom 身上添加一个fiber 2i116qjpu7p 它的值是 fiber 虚拟dom
 export function precacheFiberNode(
   hostInst: Fiber,
   node: Instance | TextInstance | SuspenseInstance | ReactScopeInstance,
@@ -199,6 +201,10 @@ export function getFiberCurrentPropsFromNode(
   return (node: any)[internalPropsKey] || null;
 }
 
+// 给真实 dom 身上添加props "__reactProps$2i116qjpu7p" 它的值是 这个元素身上的 props，
+// children: "你好呀"
+// className: "theme-context-child"
+// style: {background: "purple"} 
 export function updateFiberProps(
   node: Instance | TextInstance | SuspenseInstance,
   props: Props,

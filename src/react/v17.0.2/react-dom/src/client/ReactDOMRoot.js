@@ -152,14 +152,18 @@ function createRootImpl(
     concurrentUpdatesByDefaultOverride,
   );
 
-  /* 将该容器标记为根, 内部是给容器身上添加一个一个随机数属性 
+  /* 
+  将该容器标记为根, 内部是给容器身上添加一个一个随机数属性 
+  container.__reactContainer$83ljcj61lpa = root.current
   node[internalContainerInstanceKey] = hostRoot;
   container[__reactContainer$+Math.random().toString(36).slice(2)] = root.current;
   */
   markContainerAsRoot(root.current, container);
 
+  // 判断容器的节点类型是否为注释，如果是则使用父容器作为容器，否则就使用容器本身
   const rootContainerElement =
     container.nodeType === COMMENT_NODE ? container.parentNode : container;
+  // 监听所有事件
   listenToAllSupportedEvents(rootContainerElement);
 
   if (mutableSources) {

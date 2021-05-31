@@ -183,6 +183,7 @@ export function markRenderStopped(): void {
 export function markRenderScheduled(lane: Lane): void {
   if (enableSchedulingProfiler) {
     if (supportsUserTimingV3) {
+      // --schedule-render-1-Sync
       markAndClear(`--schedule-render-${formatLanes(lane)}`);
     }
   }

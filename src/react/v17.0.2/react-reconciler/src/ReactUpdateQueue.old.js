@@ -233,6 +233,9 @@ export function enqueueUpdate<State>(
   }
 
   // 从更新队列中 取到 shared
+/*   interleaved: null
+  lanes: 0
+  pending: null */
   const sharedQueue: SharedQueue<State> = (updateQueue: any).shared;
 
   // 进入 elese
@@ -480,6 +483,7 @@ function getStateFromUpdate<State>(
   return prevState;
 }
 
+// 计算最新的 state
 export function processUpdateQueue<State>(
   workInProgress: Fiber,
   props: any,
@@ -602,6 +606,13 @@ export function processUpdateQueue<State>(
 
         // 获取新状态
         // Process this update.
+        /* cache: Map(0) {}
+        element: $$typeof: Symbol(react.element)
+                  key: null
+                  props: {}
+                  ref: null
+                  type: ƒ App()
+                  _owner: null */
         newState = getStateFromUpdate(
           workInProgress,
           queue,
@@ -626,7 +637,7 @@ export function processUpdateQueue<State>(
       if (update === null) {
         pendingQueue = queue.shared.pending;
         if (pendingQueue === null) {
-          // 说明此次更新已完成
+          // 说明此次更新已完成 结束循环
           break;
         } else {
           // An update was scheduled from inside a reducer. Add the new

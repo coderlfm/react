@@ -31,6 +31,7 @@ const setTextContent = function(node: Element, text: string): void {
       return;
     }
   }
+  // react 内部设置文本的方式
   node.textContent = text;
 };
 

@@ -288,13 +288,14 @@ export function updateContainer(
   // 创建一个更新等级，第一次 render 会返回 1 
   const lane = requestUpdateLane(current);
 
+  // 编辑 scheduled
   if (enableSchedulingProfiler) {
     markRenderScheduled(lane);
   }
 
   // 第一次 render 时 parentComponent ，会返回一个空对象
   const context = getContextForSubtree(parentComponent);
-  if (container.context === null) {
+  if (container.context === null) { // 当为空对象时，给容器的 context 也设置为一个空对象
     container.context = context;
   } else {
     container.pendingContext = context;
@@ -318,13 +319,12 @@ export function updateContainer(
     }
   }
 
-  // 创建一个更新对象
-  /* 
+  /* 创建一个更新对象 更新对象如下，如果且还会再给 更新对象新增一个 payload 对象，里面有一个element 是 app 的虚拟 dom
   {
-    eventTime,
-    lane,
+    eventTime,   2681766.045000011
+    lane,   1
 
-    tag: UpdateState,
+    tag: UpdateState,   0
     payload: null,
     callback: null,
 
@@ -352,6 +352,7 @@ export function updateContainer(
   }
 
   // 入队更新，准备更新
+  // fiber 节点 FiberRoot， update 对象，1
   enqueueUpdate(current, update, lane);
 
   // 开始调度更新

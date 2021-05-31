@@ -1205,6 +1205,9 @@ function ChildReconciler(shouldTrackSideEffects) {
     }
 
     const created = createFiberFromPortal(portal, returnFiber.mode, lanes);
+    // 给该 fiber 对象的 return 属性指向父 fiber 节点
+    // 传入的是 workInProgress，
+    // 该 created 会 作为 workInProgress.child 的属性（这就是 react fiber 链表）
     created.return = returnFiber;
     return created;
   }

@@ -473,12 +473,14 @@ export function scheduleUpdateOnFiber(
 
   if (enableUpdaterTracking) {
     if (isDevToolsPresent) {
+      // 给 root 身上的 pendingUpdatersLaneMap 添加更新赛道
       addFiberToLanesMap(root, fiber, lane);
     }
   }
 
   // Mark that the root has a pending update.
   // 在root上标记更新，将update的lane放到root.pendingLanes
+  // 将 root.eventTimes 添加为传入的时间戳
   markRootUpdated(root, lane, eventTime);
 
   if (enableProfilerTimer && enableProfilerNestedUpdateScheduledHook) {
@@ -588,6 +590,7 @@ function markUpdateLaneFromFiberToRoot(
   if (alternate !== null) {
     alternate.lanes = mergeLanes(alternate.lanes, lane);
   }
+
   if (__DEV__) {
     if (
       alternate === null &&
@@ -596,10 +599,13 @@ function markUpdateLaneFromFiberToRoot(
       warnAboutUpdateOnNotYetMountedFiberInDEV(sourceFiber);
     }
   }
+
+  // 从父路径遍历到根路径并更新子车道。
   // Walk the parent path to the root and update the child lanes.
   let node = sourceFiber;
   let parent = sourceFiber.return;    // 当前 fiber 节点的 return 会指向 父节点，如果是根节点则是 null
 
+  // 这部分代码 和 16.7 改动有点大
   // 如果是 根节点 则是 null，该逻辑会向上收集 childLanes
   while (parent !== null) {
     parent.childLanes = mergeLanes(parent.childLanes, lane);
@@ -617,7 +623,7 @@ function markUpdateLaneFromFiberToRoot(
     parent = parent.return;
   }
 
-  // 是否为根节点
+  // 是否为根节点 根节点为 3
   if (node.tag === HostRoot) {
     // 如果是根节点则将其身上的  stateNode 返回
     /* stateNode 的赋值， 可以在 ReactFiberRoot.old.js 中 createFiberRoot() 方法中找到
@@ -996,7 +1002,8 @@ function performSyncWorkOnRoot(root) {
   
   // 第一次会返回false，内部什么都不做
   flushPassiveEffects();
-
+  
+  // 获取最新的更新赛道
   let lanes = getNextLanes(root, NoLanes);
   if (!includesSomeLane(lanes, SyncLane)) {
     // There's no remaining sync work left.
@@ -1347,7 +1354,7 @@ function handleError(root, thrownValue): void {
 function pushDispatcher() {
   // 第一次这个 current 是 null
   const prevDispatcher = ReactCurrentDispatcher.current;
-  ReactCurrentDispatcher.current = ContextOnlyDispatcher;
+  ReactCurrentDispatcher.current = ContextOnlyDispatcher; // 里面是所有的 hooks useState 等
   if (prevDispatcher === null) {
     // The React isomorphic package does not include a default dispatcher.
     // Instead the first renderer will lazily attach one, in order to give
@@ -1424,7 +1431,7 @@ function renderRootSync(root: FiberRoot, lanes: Lanes) {
   // 第一次 render 是 这里拿到的是 4
   const prevExecutionContext = executionContext;
   // 或等 等价于 executionContext = executionContext | RenderContext;
-  executionContext |= RenderContext;
+  executionContext |= RenderContext;      // 4 |= 8
 
   // 取到 dispatch，第一次是null，会取到一个 ContextOnlyDispatcher
   const prevDispatcher = pushDispatcher();  
@@ -1440,6 +1447,8 @@ function renderRootSync(root: FiberRoot, lanes: Lanes) {
           memoizedUpdaters.clear();
         }
 
+        // 此时，将计划即将进行的工作的纤程从Map移到Set。如果我们对这项工作进行救助，我们将把他们拉回来(就像上面提到的那样)。
+        // 现在移动它们是很重要的，以防工作在不同的更新器中产生更多具有相同优先级的工作。这样我们就可以将当前的更新和未来的更新分开。
         // At this point, move Fibers that scheduled the upcoming work from the Map to the Set.
         // If we bailout on this work, we'll move them back (like above).
         // It's important to move them now in case the work spawns more work at the same priority with different updaters.
@@ -1448,7 +1457,7 @@ function renderRootSync(root: FiberRoot, lanes: Lanes) {
       }
     }
 
-    // 内部创建了  workInProgress
+    // 内部创建了  workInProgress // 内部基本上完全赋值了一份 root
     prepareFreshStack(root, lanes);
   }
 
@@ -1462,6 +1471,7 @@ function renderRootSync(root: FiberRoot, lanes: Lanes) {
     markRenderStarted(lanes);
   }
 
+  // 使用 都 while 循环 递归创建子 filer
   do {
     try {
       workLoopSync();
@@ -1590,7 +1600,7 @@ function renderRootConcurrent(root: FiberRoot, lanes: Lanes) {
 }
 
 /** @noinline */
-function workLoopConcurrent() {
+function workLoopConcurrent() { // 准备执行工作循环
   // Perform work until Scheduler asks us to yield
   while (workInProgress !== null && !shouldYield()) {
     performUnitOfWork(workInProgress);
@@ -1604,10 +1614,12 @@ function performUnitOfWork(unitOfWork: Fiber): void {
   const current = unitOfWork.alternate;
   setCurrentDebugFiberInDEV(unitOfWork);
 
-  let next;
+  let next;   // 下一个 fiber
   if (enableProfilerTimer && (unitOfWork.mode & ProfileMode) !== NoMode) {
+
+    // 启动计时，会给当前的 fiber 添加一个 actualStartTime 属性为
     startProfilerTimer(unitOfWork);
-    // 会得到 workInProgress.child; 就是 unitOfWork的 child
+    // 会得到 workInProgress.child; 就是 unitOfWork 的 child
     next = beginWork(current, unitOfWork, subtreeRenderLanes);
     stopProfilerTimerIfRunningAndRecordDelta(unitOfWork, true);
   } else {
@@ -1620,6 +1632,7 @@ function performUnitOfWork(unitOfWork: Fiber): void {
   // 将新的 props 设置为老的 props
   unitOfWork.memoizedProps = unitOfWork.pendingProps;
   if (next === null) {
+    // 如果递归到最终的 节点，则表示完成了这次 “递” 的操作，开始执行 “归” 的操作  completeUnitOfWork()
     // If this doesn't spawn new work, complete the current work.
     completeUnitOfWork(unitOfWork);
   } else {
@@ -1634,6 +1647,7 @@ function performUnitOfWork(unitOfWork: Fiber): void {
 function completeUnitOfWork(unitOfWork: Fiber): void {
   // Attempt to complete the current unit of work, then move to the next
   // sibling. If there are no more siblings, return to the parent fiber.
+  // 尝试完成当前的工作单元，然后移动到下一个兄弟姐妹。如果没有更多的兄弟光纤，则返回到父光纤。
   let completedWork = unitOfWork;
   do {
     // The current, flushed, state of this fiber is the alternate. Ideally
@@ -1652,7 +1666,10 @@ function completeUnitOfWork(unitOfWork: Fiber): void {
       ) {
         next = completeWork(current, completedWork, subtreeRenderLanes);
       } else {
+        // 记录开始时间
         startProfilerTimer(completedWork);
+
+        // 归，开始创建 dom 元素
         next = completeWork(current, completedWork, subtreeRenderLanes);
         // Update render duration assuming we didn't error.
         stopProfilerTimerIfRunningAndRecordDelta(completedWork, false);
@@ -1706,8 +1723,9 @@ function completeUnitOfWork(unitOfWork: Fiber): void {
         returnFiber.deletions = null;
       }
     }
-
+    
     const siblingFiber = completedWork.sibling;
+    // 继续看 该 fiber 是否还有 兄弟节点，有的话则继续进行兄弟的姐 completeWork
     if (siblingFiber !== null) {
       // If there is more work to do in this returnFiber, do that next.
       workInProgress = siblingFiber;

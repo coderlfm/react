@@ -152,6 +152,8 @@ const STYLE = 'style';
 let eventsEnabled: ?boolean = null;
 let selectionInformation: null | SelectionInformation = null;
 
+
+// 判断是否为以下几个元素，并且 props 中是否添加了自动聚焦属性，
 function shouldAutoFocusHostComponent(type: string, props: Props): boolean {
   switch (type) {
     case 'button':
@@ -260,6 +262,7 @@ export function resetAfterCommit(containerInfo: Container): void {
   selectionInformation = null;
 }
 
+// 创建实例 创建元素实体
 export function createInstance(
   type: string,
   props: Props,
@@ -287,13 +290,17 @@ export function createInstance(
   } else {
     parentNamespace = ((hostContext: any): HostContextProd);
   }
+
+  // 创建元素
   const domElement: Instance = createElement(
     type,
     props,
     rootContainerInstance,
     parentNamespace,
   );
+  // 给真实dom 身上添加 fiber 对象 domElement["__reactFiber$2i116qjpu7p"] = internalInstanceHandle
   precacheFiberNode(internalInstanceHandle, domElement);
+  // 给真实dom 身上添加 props 对象 domElement["__reactProps$2i116qjpu7p"] = { children: '你好呀', className: 'theme-context-child' }
   updateFiberProps(domElement, props);
   return domElement;
 }
@@ -313,6 +320,7 @@ export function finalizeInitialChildren(
   hostContext: HostContext,
 ): boolean {
   setInitialProperties(domElement, type, props, rootContainerInstance);
+  //
   return shouldAutoFocusHostComponent(type, props);
 }
 

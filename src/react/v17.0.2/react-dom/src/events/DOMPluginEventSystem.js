@@ -381,6 +381,7 @@ const listeningMarker =
     .toString(36)
     .slice(2);
 
+// 开始监听所有事件
 export function listenToAllSupportedEvents(rootContainerElement: EventTarget) {
   if (!(rootContainerElement: any)[listeningMarker]) {
     (rootContainerElement: any)[listeningMarker] = true;

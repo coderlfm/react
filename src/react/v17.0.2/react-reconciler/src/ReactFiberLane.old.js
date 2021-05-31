@@ -259,14 +259,16 @@ export function getNextLanes(root: FiberRoot, wipLanes: Lanes): Lanes {
   const suspendedLanes = root.suspendedLanes;
   const pingedLanes = root.pingedLanes;
 
+  // 在所有非空闲工作完成之前，不要对任何空闲工作进行工作，即使该工作被挂起。
   // Do not work on any idle work until all the non-idle work has finished,
   // even if the work is suspended.
   const nonIdlePendingLanes = pendingLanes & NonIdleLanes;
   if (nonIdlePendingLanes !== NoLanes) {
     const nonIdleUnblockedLanes = nonIdlePendingLanes & ~suspendedLanes;
     if (nonIdleUnblockedLanes !== NoLanes) {
+      // 第一次render 会进入到这里，获取到最高的更新赛道
       nextLanes = getHighestPriorityLanes(nonIdleUnblockedLanes);
-      nextLanePriority = return_highestLanePriority;
+      nextLanePriority = return_highestLanePriority;    // 在 getHighestPriorityLanes 有给 return_highestLanePriority 赋值
     } else {
       const nonIdlePingedLanes = nonIdlePendingLanes & pingedLanes;
       if (nonIdlePingedLanes !== NoLanes) {
@@ -863,6 +865,8 @@ export function addFiberToLanesMap(
   if (!isDevToolsPresent) {
     return;
   }
+  
+  // 取到 31 个更新赛道，第一次是 数组里面有 31 个 set
   const pendingUpdatersLaneMap = root.pendingUpdatersLaneMap;
   while (lanes > 0) {
     const index = laneToIndex(lanes);
@@ -882,8 +886,8 @@ export function movePendingFibersToMemoized(root: FiberRoot, lanes: Lanes) {
   if (!isDevToolsPresent) {
     return;
   }
-  const pendingUpdatersLaneMap = root.pendingUpdatersLaneMap;
-  const memoizedUpdaters = root.memoizedUpdaters;
+  const pendingUpdatersLaneMap = root.pendingUpdatersLaneMap; // 取到所有的 updateLane  是一个包含 31 个 set 的数组
+  const memoizedUpdaters = root.memoizedUpdaters;             // 这个地方是 Set 会将 上面的移动这个 set 里面
   while (lanes > 0) {
     const index = laneToIndex(lanes);
     const lane = 1 << index;
