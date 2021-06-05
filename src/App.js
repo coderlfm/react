@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import State from './components/State'
 import LanesDemo from './components/LanesDemo'
 import AppSibling from './components/AppSibling'
@@ -20,17 +20,31 @@ import './App.css';
 }*/
 function App() {
 
+  useEffect(() => {
+    console.log('useEffect被执行');
+    return () => {
+      console.log('useEffect 卸载函数被执行');
+    }
+  }, [])
+
+  const [conut, setCount] = useState(1)
+
   // 事件系统
   // return <EventDemo/>
 
   // return <Hooks/>
   // fiber树
-  // return (
-  //   <div className="App">
-  //     <span className={'app-span'} onClick={() => setCount(count + 1)}>App{count}</span>
-  //     <AppSibling count={count}/>
-  //   </div>
-  // );
+  return (
+    <div className="App">
+      <span onClick={() => {
+        debugger
+        setCount(conut + 1);
+      }}>我是span {conut}</span>
+      <h2>我是h2</h2>
+    </div>
+  );
+  {/* <span className={'app-span'} onClick={() => setCount(count + 1)}>App{count}</span> */ }
+  {/* <AppSibling count={count}/> */ }
 
   // Scheduler调度任务与用户交互
   // return <SchedulerTask/>
@@ -39,7 +53,7 @@ function App() {
   // return <TasksWithDifferentPriorities/>
 
   // context
-  return <ContextDemo/>
+  // return <ContextDemo/>
 
   // diff 算法
   // return <Diff ref={'diffRef'}/>

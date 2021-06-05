@@ -276,7 +276,7 @@ export function reconcileChildren(
     // If we had any progressed work already, that is invalid at this point so
     // let's throw it out.
 
-    // 将 workInProgress 的 child fiber 挂载到 .child 上 
+    // 将 workInProgress 的 child fiber 挂载到 .child 上，如果没有子节点了这个 child 会是 null
     workInProgress.child = reconcileChildFibers(
       workInProgress,
       current.child,
@@ -1158,7 +1158,7 @@ function updateHostRoot(current, workInProgress, renderLanes) {
   const prevState = workInProgress.memoizedState;
   const prevChildren = prevState.element;
 
-  debugger;
+  // debugger;
   // 克隆更新队列
   cloneUpdateQueue(current, workInProgress);
   // 计算到新的 state 给 memoizedState 添加上值  cache，element
@@ -1232,12 +1232,12 @@ function updateHostRoot(current, workInProgress, renderLanes) {
     // Otherwise reset hydration state in case we aborted and resumed another
     // root.
     // 调和 children
-    // 给 workInProgress 创建了 child
+    // 给 workInProgress 创建了 child 对象
     reconcileChildren(current, workInProgress, nextChildren, renderLanes);
     resetHydrationState();
   }
 
-  // 将 workInProgress 的 child 返回
+  // 将 workInProgress 的 child 对象 返回
   return workInProgress.child;
 }
 
@@ -3216,11 +3216,14 @@ function remountFiber(
   }
 }
 
+// 开始工作循环
 function beginWork(
   current: Fiber | null,
   workInProgress: Fiber,
   renderLanes: Lanes,
 ): Fiber | null {
+  // debugger;
+
   let updateLanes = workInProgress.lanes;
 
   if (__DEV__) {
@@ -3559,9 +3562,9 @@ function beginWork(
         renderLanes,
       );
     }
-    case HostRoot:  //root 组件 会返回 workInProgress.child;
+    case HostRoot:  //root 组件 会返回 workInProgress.child 对象
       return updateHostRoot(current, workInProgress, renderLanes);
-    case HostComponent:
+    case HostComponent:   // html 原生标签
       return updateHostComponent(current, workInProgress, renderLanes);
     case HostText:
       return updateHostText(current, workInProgress);

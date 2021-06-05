@@ -338,6 +338,7 @@ function setInitialDOMProperties(
   }
 }
 
+// 将props上的属性设置到dom身上
 function updateDOMProperties(
   domElement: Element,
   updatePayload: Array<any>,
@@ -345,15 +346,16 @@ function updateDOMProperties(
   isCustomComponentTag: boolean,
 ): void {
   // TODO: Handle wasCustomComponentTag
+  // 在 updatPayload 中数组的第[i] 项是更新的key，第 [i+1]项 是更新的值，
   for (let i = 0; i < updatePayload.length; i += 2) {
     const propKey = updatePayload[i];
     const propValue = updatePayload[i + 1];
     if (propKey === STYLE) {
-      setValueForStyles(domElement, propValue);
+      setValueForStyles(domElement, propValue);   // 设置样式
     } else if (propKey === DANGEROUSLY_SET_INNER_HTML) {
       setInnerHTML(domElement, propValue);
     } else if (propKey === CHILDREN) {
-      setTextContent(domElement, propValue);
+      setTextContent(domElement, propValue);  // 设置文本属性
     } else {
       setValueForProperty(domElement, propKey, propValue, isCustomComponentTag);
     }

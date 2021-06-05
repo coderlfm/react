@@ -193,7 +193,7 @@ let updateHostComponent;
 let updateHostText;
 if (supportsMutation) {
   // Mutation mode
-
+  // 将当前元素下的所有 正式dom 都 追加进去
   appendAllChildren = function(
     parent: Instance,
     workInProgress: Fiber,
@@ -206,7 +206,7 @@ if (supportsMutation) {
     while (node !== null) {
       // 如果当前节点时 html 节点和
       if (node.tag === HostComponent || node.tag === HostText) {
-        // 将真实节点，追加到 父节点下
+        // 将真实节点，追加到 父节点下，真实节点在 stateNode 身上
         appendInitialChild(parent, node.stateNode);
       } else if (node.tag === HostPortal) {
         // If we have a portal child, then we don't want to traverse
@@ -221,7 +221,7 @@ if (supportsMutation) {
         return;
       }
 
-      // 如果没有兄弟节点了
+      // 如果没有兄弟节点了,则返回父节点
       while (node.sibling === null) {
         if (node.return === null || node.return === workInProgress) {
           return;
@@ -229,7 +229,10 @@ if (supportsMutation) {
         node = node.return;
       }
 
-      // 如果还有兄弟节点，则把当前兄弟节点的 return 赋值一份给 兄弟节点的 return
+      // 因为 fiber 节点的数据结构是 child sibling retun 
+      // 所以每个 fiber 节点都只有一个 child，当 追加完 child 的时候，要继续把 sibling 也追加进去
+      // 如果还有兄弟节点，则把当前兄弟节点的 return 赋值一份给 兄弟节点的 return，并且将 sibling 赋值给 node，继续循环
+      // 将 sibling 也追加到父节点身上
       node.sibling.return = node.return;
       node = node.sibling;
     }
@@ -799,6 +802,7 @@ function completeWork(
 ): Fiber | null {
   const newProps = workInProgress.pendingProps;
 
+  // 判断 元素的类型
   switch (workInProgress.tag) {
     case IndeterminateComponent:
     case LazyComponent:
@@ -820,8 +824,8 @@ function completeWork(
       bubbleProperties(workInProgress);
       return null;
     }
-    case HostRoot: {
-      const fiberRoot = (workInProgress.stateNode: FiberRoot);
+    case HostRoot: {    // 根组件
+      const fiberRoot = (workInProgress.stateNode: FiberRoot);  // 获取到根组件的 真实节点 #root
       if (enableCache) {
         popRootCachePool(fiberRoot, renderLanes);
 
@@ -855,10 +859,13 @@ function completeWork(
       bubbleProperties(workInProgress);
       return null;
     }
-    case HostComponent: {
+    case HostComponent: {   // html 原生标签
       popHostContext(workInProgress);
       const rootContainerInstance = getRootHostContainer();
+      // 获取 元素类型 例如 div | span 
       const type = workInProgress.type;
+
+      // 更新 阶段
       if (current !== null && workInProgress.stateNode != null) {
         updateHostComponent(
           current,
@@ -904,6 +911,8 @@ function completeWork(
             markUpdate(workInProgress);
           }
         } else {
+          
+          // 创建阶段
           // 开始创建真实dom
           // 并且给当前 真实dom 身上添加 fiber props 属性
           const instance = createInstance(
@@ -914,7 +923,7 @@ function completeWork(
             workInProgress,
           );
           
-          // 将当前元素的所有 children 添加到 当前元素下
+          // 将当前元素的所有 真实dom child 追加到 当前元素下
           appendAllChildren(instance, workInProgress, false, false);
 
           // 记录当前的真实节点

@@ -237,6 +237,7 @@ function safelyCallComponentWillUnmount(
 }
 
 // Capture errors so they don't interrupt mounting.
+// 调用类组件的 componentDidMount 生命周期函数
 function safelyCallComponentDidMount(
   current: Fiber,
   nearestMountedAncestor: Fiber | null,
@@ -504,7 +505,7 @@ function commitBeforeMutationEffectsOnFiber(finishedWork: Fiber) {
         }
         break;
       }
-      case HostRoot: {
+      case HostRoot: {    // 如果是根组件
         if (supportsMutation) {
           const root = finishedWork.stateNode;
           clearContainer(root.containerInfo);
@@ -557,6 +558,7 @@ function commitHookEffectListUnmount(
         const destroy = effect.destroy;
         effect.destroy = undefined;
         if (destroy !== undefined) {
+          // 执行销毁函数
           safelyCallDestroy(finishedWork, nearestMountedAncestor, destroy);
         }
       }
@@ -574,9 +576,11 @@ function commitHookEffectListMount(tag: number, finishedWork: Fiber) {
     do {
       if ((effect.tag & tag) === tag) {
         // Mount
+        // 执行 effect 的创建并且 记录 销毁函数
         const create = effect.create;
         effect.destroy = create();
 
+        // 校验 effect 返回的函数 是否 null 或者返回的是否为 promise
         if (__DEV__) {
           const destroy = effect.destroy;
           if (destroy !== undefined && typeof destroy !== 'function') {
@@ -610,6 +614,7 @@ function commitHookEffectListMount(tag: number, finishedWork: Fiber) {
           }
         }
       }
+      // do while 循环
       effect = effect.next;
     } while (effect !== firstEffect);
   }
@@ -1535,6 +1540,7 @@ function getHostSibling(fiber: Fiber): ?Instance {
   }
 }
 
+// 新增
 function commitPlacement(finishedWork: Fiber): void {
   if (!supportsMutation) {
     return;
@@ -1594,6 +1600,9 @@ function insertOrAppendPlacementNodeIntoContainer(
   const isHost = tag === HostComponent || tag === HostText;
   if (isHost) {
     const stateNode = node.stateNode;
+
+    // 如果有兄弟节点则使用 insertBefor 否则使用 appendChild
+    
     if (before) {
       insertInContainerBefore(parent, stateNode, before);
     } else {
@@ -1774,6 +1783,7 @@ function unmountHostComponents(
   }
 }
 
+// 删除
 function commitDeletion(
   finishedRoot: FiberRoot,
   current: Fiber,
@@ -1791,6 +1801,7 @@ function commitDeletion(
   detachFiberMutation(current);
 }
 
+// 更新
 function commitWork(current: Fiber | null, finishedWork: Fiber): void {
   if (!supportsMutation) {
     switch (finishedWork.tag) {
@@ -1864,7 +1875,7 @@ function commitWork(current: Fiber | null, finishedWork: Fiber): void {
     case FunctionComponent:
     case ForwardRef:
     case MemoComponent:
-    case SimpleMemoComponent: {
+    case SimpleMemoComponent: { // 如果是函数式组件 则调用 卸载，卸载 useeffect 
       // Layout effects are destroyed during the mutation phase so that all
       // destroy functions for all fibers are called before any create functions.
       // This prevents sibling component effects from interfering with each other,
@@ -1897,7 +1908,7 @@ function commitWork(current: Fiber | null, finishedWork: Fiber): void {
     case ClassComponent: {
       return;
     }
-    case HostComponent: {
+    case HostComponent: {  // html 原生元素类型
       const instance: Instance = finishedWork.stateNode;
       if (instance != null) {
         // Commit the work prepared earlier.
@@ -2115,6 +2126,7 @@ function commitResetTextContent(current: Fiber) {
   resetTextContent(current.stateNode);
 }
 
+// mutations 中
 export function commitMutationEffects(
   root: FiberRoot,
   firstChild: Fiber,
@@ -2136,6 +2148,7 @@ function commitMutationEffects_begin(root: FiberRoot) {
 
     // TODO: Should wrap this in flags check, too, as optimization
     const deletions = fiber.deletions;
+    // 执行删除
     if (deletions !== null) {
       for (let i = 0; i < deletions.length; i++) {
         const childToDelete = deletions[i];
@@ -2208,6 +2221,7 @@ function commitMutationEffects_complete(root: FiberRoot) {
   }
 }
 
+// 元素的插入和更新在这一步完成
 function commitMutationEffectsOnFiber(finishedWork: Fiber, root: FiberRoot) {
   const flags = finishedWork.flags;
 
@@ -2241,6 +2255,7 @@ function commitMutationEffectsOnFiber(finishedWork: Fiber, root: FiberRoot) {
       // inserted, before any life-cycles like componentDidMount gets called.
       // TODO: findDOMNode doesn't rely on this any more but isMounted does
       // and isMounted is deprecated anyway so we should be able to kill this.
+      // 清空掉 placement
       finishedWork.flags &= ~Placement;
       break;
     }
@@ -2390,7 +2405,7 @@ function commitLayoutMountEffects_complete(
       switch (fiber.tag) {
         case FunctionComponent:
         case ForwardRef:
-        case SimpleMemoComponent: {
+        case SimpleMemoComponent: { // 函数式组件等
           if (
             enableProfilerTimer &&
             enableProfilerCommitHooks &&
@@ -2407,9 +2422,9 @@ function commitLayoutMountEffects_complete(
           }
           break;
         }
-        case ClassComponent: {
+        case ClassComponent: {      // 类组件
           const instance = fiber.stateNode;
-          if (typeof instance.componentDidMount === 'function') {
+          if (typeof instance.componentDidMount === 'function') {   // 需要执行类组件的 componentDidMount
             safelyCallComponentDidMount(fiber, fiber.return, instance);
           }
           break;
@@ -2450,6 +2465,7 @@ function commitLayoutMountEffects_complete(
       }
     }
 
+    // 如果这里相等，则会return
     if (fiber === subtreeRoot) {
       nextEffect = null;
       return;

@@ -474,17 +474,66 @@ export function updateContainer(
 react 为不同的更新划分了不同的层级
 一共有 31 个 层级，源码中是使用 二进制来表示， 源码位置在 `ReactFiberLane.old.js`
 
-也可以在 [在线源码](https://github.com/facebook/react/blob/master/packages/react-reconciler/src/ReactFiberLane.old.js#L31) 中查看
+也可以在 [在线源码](https://github.com/facebook/react/blob/v17.0.2/packages/react-reconciler/src/ReactFiberLane.old.js#L31) 中查看
 
 ## 创建虚拟 dom
 
-在 react 中 创建 虚拟 dom，是从 `workLoopConcurrent()` 方法开始到 `performUnitOfWork` 递归调用 `beginWork` 进行创建 虚拟 dom，也就是 fiber，该部分源码可以在 [这里体现](https://github.com/facebook/react/blob/master/packages/react-reconciler/src/ReactFiberWorkLoop.old.js#L1558)
+在 react 中 创建 虚拟 dom，是从 `workLoopConcurrent()` 方法开始到 `performUnitOfWork` 递归调用 `beginWork` 进行创建 虚拟 dom，也就是 fiber，该部分源码可以在 [这里体现](https://github.com/facebook/react/blob/v17.0.2/packages/react-reconciler/src/ReactFiberWorkLoop.old.js#L1558)
 
 ### beginWork
+`beginWork(current, workInProgress, renderLanes)`
 
-在页面初次渲染的时候，会递归创建 `fiber` 节点，从 `beginWork` 会从根节点开始采用深度遍历的方式，递归创建子 `fiber` 节点，`beginWork` 的源码在 [这里体现](https://github.com/facebook/react/blob/master/packages/react-reconciler/src/ReactFiberBeginWork.old.js#L3188)，
+
+
+在页面初次渲染的时候，会递归创建 `fiber` 节点，从 `beginWork` 会从根节点开始采用深度遍历的方式，递归创建子 `fiber` 节点，`beginWork` 的源码在 [这里体现](https://github.com/facebook/react/blob/v17.0.2/packages/react-reconciler/src/ReactFiberBeginWork.old.js#L3188)，
 
 添加了注释的源代码在 [这里](https://github.com/coderlfm/react/blob/feature/src/react/v17.0.2/react-reconciler/src/ReactFiberBeginWork.old.js)
 
 ### 创建真实 dom
 在 beginWork 递归到底之后，开始从底部开始递归到顶创建真实 `dom`,
+<br><br>
+
+
+## commitRoot
+在创建完 `虚拟dom` 和 `真实dom` 的时候，最终需要进行 `commit` 具体源码体现在 [这里](https://github.com/facebook/react/blob/v17.0.2/packages/react-reconciler/src/ReactFiberWorkLoop.old.js#L1038)
+
+而在 commit 中，最主要有三个函数
+- [commitBeforeMutationEffects](https://github.com/facebook/react/blob/v17.0.2/packages/react-reconciler/src/ReactFiberWorkLoop.old.js#L2026)
+- [commitMutationEffects](https://github.com/facebook/react/blob/v17.0.2/packages/react-reconciler/src/ReactFiberWorkLoop.old.js#L2063)
+- [commitLayoutEffects](https://github.com/facebook/react/blob/v17.0.2/packages/react-reconciler/src/ReactFiberWorkLoop.old.js#L2098)
+
+> 这三部分在 17.0.2 中是在 do while 循环中调用，但是在下一个版本中有修改
+每个阶段都有对应的 `begin` `complete` `OnFiber` 方法
+
+<br><br>
+
+### `commitBeforeMutationEffects` mutation 前
+
+在该方法中的 `commitBeforeMutationEffects_begin` 会先执行 删除的操作
+这一步会执行 派发 `beforeblur` 元素失去焦点事件
+
+`commitBeforeMutationEffectsOnFiber` 会判断fiber 节点的类型，其中需要主要两种类型， `ClassComponent` 和 `HostRoot`(根组件) 
+  - `ClassComponent` 会在这个阶段调用 [`getSnapshotBeforeUpdate()`](https://github.com/facebook/react/blob/e0d9b289998c66d2e4fb75582b9e107054e4e0a4/packages/react-reconciler/src/ReactFiberCommitWork.old.js#L486)
+  - `HostRoot` 会在这个阶段 [清空真实dom中的内容](https://github.com/facebook/react/blob/e0d9b289998c66d2e4fb75582b9e107054e4e0a4/packages/react-reconciler/src/ReactFiberCommitWork.old.js#L510)
+<br><br>
+
+### `commitMutationEffects` mutation 中
+
+在该方法中的 `commitMutationEffects_begin` 会先执行 删除的操作
+`commitDeletion` 该方法中会调用 `unmountHostComponents` 从父节点向下递归，如果是根节点接着调用 `commitNestedUnmounts` 然后 `while` 循环调用 `commitUnmount`来递归调用子组件的销毁函数，
+  - 函数式组件，会在这一步调用 `useeffect` 的[销毁函数](https://github.com/facebook/react/blob/master/packages/react-reconciler/src/ReactFiberCommitWork.old.js#L1226)
+  - 类组件，会在这一步调用 类组件的 [componentWillUnmount](https://github.com/facebook/react/blob/master/packages/react-reconciler/src/ReactFiberCommitWork.old.js#L1242) 生命周期函数
+
+
+`commitMutationEffectsOnFiber` 中会判断effect 的类型 其中有  placement | updates | PlacementAndUpdate 等
+  - [commitPlacement](https://github.com/facebook/react/blob/master/packages/react-reconciler/src/ReactFiberCommitWork.old.js#L1541) 新增 取到当前 元素的父节点，以及当前元素的兄弟节点，如果有兄弟节点就使用 `insertInContainerBefore` 否则使用  `appendChildToContainer`
+  - [Update](https://github.com/facebook/react/blob/master/packages/react-reconciler/src/ReactFiberCommitWork.old.js#L2274) 更新 判断当前 fiber 的tag，如果是函数式组件，先调用 [commitHookEffectListUnmount](https://github.com/facebook/react/blob/master/packages/react-reconciler/src/ReactFiberCommitWork.old.js#L1816) 执行 useeffect 的 卸载函数
+   如果是 原生 dom元素，则更新该dom身上的属性
+<br><br>
+
+### `commitLayoutEffects` mutation 
+在该方法中的 `commitLayoutMountEffects_complete`  中会判断effect 的类型，其中需要注意的是函数式组件和类组件 
+  - [函数式组件]() 先调用 [safelyCallCommitHookLayoutEffectListMount](https://github.com/facebook/react/blob/master/packages/react-reconciler/src/ReactFiberCommitWork.old.js#L2416) 然后调用 [commitHookEffectListMount](https://github.com/facebook/react/blob/e0d9b289998c66d2e4fb75582b9e107054e4e0a4/packages/react-reconciler/src/ReactFiberCommitWork.old.js#L568) 在 `commitHookEffectListMount` 中 使用 `do while` 循环 **执行了 所有effect链表中的 副作用函数** 并且 **记录了 所有effect链表中的 销毁函数**
+  - [类组件]() 先调用 [safelyCallComponentDidMount](https://github.com/facebook/react/blob/e0d9b289998c66d2e4fb75582b9e107054e4e0a4/packages/react-reconciler/src/ReactFiberCommitWork.old.js#L2423) 然后调用 类组件的 [`componentDidMount`](https://github.com/facebook/react/blob/e0d9b289998c66d2e4fb75582b9e107054e4e0a4/packages/react-reconciler/src/ReactFiberCommitWork.old.js#L253) 生命周期函数
+
+## diff 算法

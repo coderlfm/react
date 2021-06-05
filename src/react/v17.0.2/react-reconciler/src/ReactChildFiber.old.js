@@ -7,13 +7,13 @@
  * @flow
  */
 
-import type {ReactElement} from 'shared/ReactElementType';
-import type {ReactPortal} from 'shared/ReactTypes';
-import type {Fiber} from './ReactInternalTypes';
-import type {Lanes} from './ReactFiberLane.old';
+import type { ReactElement } from 'shared/ReactElementType';
+import type { ReactPortal } from 'shared/ReactTypes';
+import type { Fiber } from './ReactInternalTypes';
+import type { Lanes } from './ReactFiberLane.old';
 
 import getComponentNameFromFiber from 'react-reconciler/src/getComponentNameFromFiber';
-import {Placement, ChildDeletion} from './ReactFiberFlags';
+import { Placement, ChildDeletion } from './ReactFiberFlags';
 import {
   getIteratorFn,
   REACT_ELEMENT_TYPE,
@@ -45,16 +45,16 @@ import {
   createFiberFromText,
   createFiberFromPortal,
 } from './ReactFiber.old';
-import {emptyRefsObject} from './ReactFiberClassComponent.old';
-import {isCompatibleFamilyForHotReloading} from './ReactFiberHotReloading.old';
-import {StrictLegacyMode} from './ReactTypeOfMode';
+import { emptyRefsObject } from './ReactFiberClassComponent.old';
+import { isCompatibleFamilyForHotReloading } from './ReactFiberHotReloading.old';
+import { StrictLegacyMode } from './ReactTypeOfMode';
 
 let didWarnAboutMaps;
 let didWarnAboutGenerators;
 let didWarnAboutStringRefs;
 let ownerHasKeyUseWarning;
 let ownerHasFunctionTypeWarning;
-let warnForMissingKey = (child: mixed, returnFiber: Fiber) => {};
+let warnForMissingKey = (child: mixed, returnFiber: Fiber) => { };
 
 if (__DEV__) {
   didWarnAboutMaps = false;
@@ -79,7 +79,7 @@ if (__DEV__) {
     invariant(
       typeof child._store === 'object',
       'React Component in warnForMissingKey should have a _store. ' +
-        'This error is likely caused by a bug in React. Please file an issue.',
+      'This error is likely caused by a bug in React. Please file an issue.',
     );
     child._store.validated = true;
 
@@ -92,8 +92,8 @@ if (__DEV__) {
 
     console.error(
       'Each child in a list should have a unique ' +
-        '"key" prop. See https://reactjs.org/link/warning-keys for ' +
-        'more information.',
+      '"key" prop. See https://reactjs.org/link/warning-keys for ' +
+      'more information.',
     );
   };
 }
@@ -129,20 +129,20 @@ function coerceRef(
           if (warnAboutStringRefs) {
             console.error(
               'Component "%s" contains the string ref "%s". Support for string refs ' +
-                'will be removed in a future major release. We recommend using ' +
-                'useRef() or createRef() instead. ' +
-                'Learn more about using refs safely here: ' +
-                'https://reactjs.org/link/strict-mode-string-ref',
+              'will be removed in a future major release. We recommend using ' +
+              'useRef() or createRef() instead. ' +
+              'Learn more about using refs safely here: ' +
+              'https://reactjs.org/link/strict-mode-string-ref',
               componentName,
               mixedRef,
             );
           } else {
             console.error(
               'A string ref, "%s", has been found within a strict mode tree. ' +
-                'String refs are a source of potential bugs and should be avoided. ' +
-                'We recommend using useRef() or createRef() instead. ' +
-                'Learn more about using refs safely here: ' +
-                'https://reactjs.org/link/strict-mode-string-ref',
+              'String refs are a source of potential bugs and should be avoided. ' +
+              'We recommend using useRef() or createRef() instead. ' +
+              'Learn more about using refs safely here: ' +
+              'https://reactjs.org/link/strict-mode-string-ref',
               mixedRef,
             );
           }
@@ -159,16 +159,16 @@ function coerceRef(
         invariant(
           ownerFiber.tag === ClassComponent,
           'Function components cannot have string refs. ' +
-            'We recommend using useRef() instead. ' +
-            'Learn more about using refs safely here: ' +
-            'https://reactjs.org/link/strict-mode-string-ref',
+          'We recommend using useRef() instead. ' +
+          'Learn more about using refs safely here: ' +
+          'https://reactjs.org/link/strict-mode-string-ref',
         );
         inst = ownerFiber.stateNode;
       }
       invariant(
         inst,
         'Missing owner for string ref %s. This error is likely caused by a ' +
-          'bug in React. Please file an issue.',
+        'bug in React. Please file an issue.',
         mixedRef,
       );
       const stringRef = '' + mixedRef;
@@ -181,7 +181,7 @@ function coerceRef(
       ) {
         return current.ref;
       }
-      const ref = function(value) {
+      const ref = function (value) {
         let refs = inst.refs;
         if (refs === emptyRefsObject) {
           // This is a lazy pooled frozen object, so we need to initialize.
@@ -203,11 +203,11 @@ function coerceRef(
       invariant(
         element._owner,
         'Element ref was specified as a string (%s) but no owner was set. This could happen for one of' +
-          ' the following reasons:\n' +
-          '1. You may be adding a ref to a function component\n' +
-          "2. You may be adding a ref to a component that was not created inside a component's render method\n" +
-          '3. You have multiple copies of React loaded\n' +
-          'See https://reactjs.org/link/refs-must-have-owner for more information.',
+        ' the following reasons:\n' +
+        '1. You may be adding a ref to a function component\n' +
+        "2. You may be adding a ref to a component that was not created inside a component's render method\n" +
+        '3. You have multiple copies of React loaded\n' +
+        'See https://reactjs.org/link/refs-must-have-owner for more information.',
         mixedRef,
       );
     }
@@ -220,8 +220,8 @@ function throwOnInvalidObjectType(returnFiber: Fiber, newChild: Object) {
   invariant(
     false,
     'Objects are not valid as a React child (found: %s). ' +
-      'If you meant to render a collection of children, use an array ' +
-      'instead.',
+    'If you meant to render a collection of children, use an array ' +
+    'instead.',
     childString === '[object Object]'
       ? 'object with keys {' + Object.keys(newChild).join(', ') + '}'
       : childString,
@@ -239,8 +239,8 @@ function warnOnFunctionType(returnFiber: Fiber) {
 
     console.error(
       'Functions are not valid as a React child. This may happen if ' +
-        'you return a Component instead of <Component /> from render. ' +
-        'Or maybe you meant to call this function rather than return it.',
+      'you return a Component instead of <Component /> from render. ' +
+      'Or maybe you meant to call this function rather than return it.',
     );
   }
 }
@@ -704,10 +704,10 @@ function ChildReconciler(shouldTrackSideEffects) {
           }
           console.error(
             'Encountered two children with the same key, `%s`. ' +
-              'Keys should be unique so that components maintain their identity ' +
-              'across updates. Non-unique keys may cause children to be ' +
-              'duplicated and/or omitted — the behavior is unsupported and ' +
-              'could change in a future version.',
+            'Keys should be unique so that components maintain their identity ' +
+            'across updates. Non-unique keys may cause children to be ' +
+            'duplicated and/or omitted — the behavior is unsupported and ' +
+            'could change in a future version.',
             key,
           );
           break;
@@ -895,7 +895,7 @@ function ChildReconciler(shouldTrackSideEffects) {
     invariant(
       typeof iteratorFn === 'function',
       'An object is not an iterable. This error is likely caused by a bug in ' +
-        'React. Please file an issue.',
+      'React. Please file an issue.',
     );
 
     if (__DEV__) {
@@ -909,10 +909,10 @@ function ChildReconciler(shouldTrackSideEffects) {
         if (!didWarnAboutGenerators) {
           console.error(
             'Using Generators as children is unsupported and will likely yield ' +
-              'unexpected results because enumerating a generator mutates it. ' +
-              'You may convert it to an array with `Array.from()` or the ' +
-              '`[...spread]` operator before rendering. Keep in mind ' +
-              'you might need to polyfill these features for older browsers.',
+            'unexpected results because enumerating a generator mutates it. ' +
+            'You may convert it to an array with `Array.from()` or the ' +
+            '`[...spread]` operator before rendering. Keep in mind ' +
+            'you might need to polyfill these features for older browsers.',
           );
         }
         didWarnAboutGenerators = true;
@@ -923,7 +923,7 @@ function ChildReconciler(shouldTrackSideEffects) {
         if (!didWarnAboutMaps) {
           console.error(
             'Using Maps as children is not supported. ' +
-              'Use an array of keyed ReactElements instead.',
+            'Use an array of keyed ReactElements instead.',
           );
         }
         didWarnAboutMaps = true;
@@ -1234,6 +1234,7 @@ function ChildReconciler(shouldTrackSideEffects) {
       newChild !== null &&
       newChild.type === REACT_FRAGMENT_TYPE &&
       newChild.key === null;
+
     if (isUnkeyedTopLevelFragment) {
       newChild = newChild.props.children;
     }
@@ -1276,6 +1277,7 @@ function ChildReconciler(shouldTrackSideEffects) {
           }
       }
 
+      // 如果 child 是数组的情况
       if (isArray(newChild)) {
         return reconcileChildrenArray(
           returnFiber,
@@ -1336,15 +1338,16 @@ function ChildReconciler(shouldTrackSideEffects) {
           invariant(
             false,
             '%s(...): Nothing was returned from render. This usually means a ' +
-              'return statement is missing. Or, to render nothing, ' +
-              'return null.',
+            'return statement is missing. Or, to render nothing, ' +
+            'return null.',
             getComponentNameFromFiber(returnFiber) || 'Component',
           );
         }
       }
     }
 
-    // Remaining cases are all treated as empty.
+    // Remaining cases are all treated as empty. 
+    // 这里表示 newChild 为空，意味着递归到底了，没有 child 了
     return deleteRemainingChildren(returnFiber, currentFirstChild);
   }
 

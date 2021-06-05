@@ -450,6 +450,7 @@ export function commitMount(
   }
 }
 
+// 更新元素
 export function commitUpdate(
   domElement: Instance,
   updatePayload: Array<mixed>,
@@ -484,6 +485,7 @@ export function appendChild(
   parentInstance.appendChild(child);
 }
 
+// 将 内容插入到父容器中
 export function appendChildToContainer(
   container: Container,
   child: Instance | TextInstance,
@@ -674,6 +676,7 @@ export function unhideTextInstance(
 
 export function clearContainer(container: Container): void {
   if (container.nodeType === ELEMENT_NODE) {
+    // 先将元素清空
     ((container: any): Element).textContent = '';
   } else if (container.nodeType === DOCUMENT_NODE) {
     const body = ((container: any): Document).body;
