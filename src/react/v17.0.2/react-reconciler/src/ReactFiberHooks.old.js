@@ -1932,12 +1932,16 @@ function dispatchAction<S, A>(
     fiber === currentlyRenderingFiber ||
     (alternate !== null && alternate === currentlyRenderingFiber)
   ) {
+    // 这是一个渲染阶段更新。把它藏在一个懒惰创建的地图中
+    // 队列 -> 更新链表。在此渲染过程之后，我们将重新启动
+    // 并将隐藏的更新应用到 work-in-progress hook 之上。
     // This is a render phase update. Stash it in a lazily-created map of
     // queue -> linked list of updates. After this render pass, we'll restart
     // and apply the stashed updates on top of the work-in-progress hook.
     didScheduleRenderPhaseUpdateDuringThisPass = didScheduleRenderPhaseUpdate = true;
     const pending = queue.pending;
     if (pending === null) {
+      // 这是第一次更新。创建一个循环列表。
       // This is the first update. Create a circular list.
       update.next = update;
     } else {
@@ -2017,6 +2021,7 @@ function dispatchAction<S, A>(
         warnIfNotCurrentlyActingUpdatesInDev(fiber);
       }
     }
+    // 开始调度更新
     const root = scheduleUpdateOnFiber(fiber, lane, eventTime);
 
     if (isTransitionLane(lane) && root !== null) {

@@ -150,6 +150,7 @@ import {
 } from './ReactFiberCacheComponent.old';
 
 function markUpdate(workInProgress: Fiber) {
+  // 标记具有更新效果的 fiber。这将Placement变成PlacementAndUpdate。
   // Tag the fiber with an update effect. This turns a Placement into
   // a PlacementAndUpdate.
   workInProgress.flags |= Update;
@@ -241,6 +242,8 @@ if (supportsMutation) {
   updateHostContainer = function(current: null | Fiber, workInProgress: Fiber) {
     // Noop
   };
+
+  // 更新原生 html 元素
   updateHostComponent = function(
     current: Fiber,
     workInProgress: Fiber,
@@ -248,15 +251,19 @@ if (supportsMutation) {
     newProps: Props,
     rootContainerInstance: Container,
   ) {
+    // 如果我们有一个 alternate ，这意味着这是一个更新，我们需要安排一个副作用来进行更新。
     // If we have an alternate, that means this is an update and we need to
     // schedule a side-effect to do the updates.
     const oldProps = current.memoizedProps;
     if (oldProps === newProps) {
+      // //在 mutation 模式下，这足以进行救助，因为即使孩子改变了，我们也不会触及这个节点。
       // In mutation mode, this is sufficient for a bailout because
       // we won't touch this node even if children changed.
       return;
     }
 
+    // 如果我们因为我们的一个孩子更新而更新，我们没有 newProps 所以我们必须重用它们。
+    // TODO: 将更新 API 拆分为 props 与 children 的单独部分。 如果孩子们根本不是特殊情况，那就更好了。
     // If we get updated because one of our children updated, we don't
     // have newProps so we'll have to reuse them.
     // TODO: Split the update API as separate for the props vs. children.
@@ -266,6 +273,8 @@ if (supportsMutation) {
     // TODO: Experiencing an error where oldProps is null. Suggests a host
     // component is hitting the resume path. Figure out why. Possibly
     // related to `hidden`.
+    
+    // 对比新旧 props 的变化，如果没有任何变化会返回 null
     const updatePayload = prepareUpdate(
       instance,
       type,
@@ -276,9 +285,12 @@ if (supportsMutation) {
     );
     // TODO: Type this specific to this type of component.
     workInProgress.updateQueue = (updatePayload: any);
+    //如果更新有效负载表明有更改或
+    //是一个新的 ref，我们将其标记为更新。所有的工作都在 commitWork 中完成。 
     // If the update payload indicates that there is a change or if there
     // is a new ref we mark this as an update. All the work is done in commitWork.
     if (updatePayload) {
+      //标记具有更新效果的光纤。这将Placement变成PlacementAndUpdate。
       markUpdate(workInProgress);
     }
   };
@@ -867,6 +879,7 @@ function completeWork(
 
       // 更新 阶段
       if (current !== null && workInProgress.stateNode != null) {
+        // 更新原生 html 元素
         updateHostComponent(
           current,
           workInProgress,

@@ -324,6 +324,7 @@ export function finalizeInitialChildren(
   return shouldAutoFocusHostComponent(type, props);
 }
 
+// 准备更新
 export function prepareUpdate(
   domElement: Instance,
   type: string,
@@ -347,6 +348,7 @@ export function prepareUpdate(
       validateDOMNesting(null, string, ownAncestorInfo);
     }
   }
+  // diff 元素属性，如果没有任何变化则返回的是 null
   return diffProperties(
     domElement,
     type,

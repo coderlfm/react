@@ -537,3 +537,28 @@ react 为不同的更新划分了不同的层级
   - [类组件]() 先调用 [safelyCallComponentDidMount](https://github.com/facebook/react/blob/e0d9b289998c66d2e4fb75582b9e107054e4e0a4/packages/react-reconciler/src/ReactFiberCommitWork.old.js#L2423) 然后调用 类组件的 [`componentDidMount`](https://github.com/facebook/react/blob/e0d9b289998c66d2e4fb75582b9e107054e4e0a4/packages/react-reconciler/src/ReactFiberCommitWork.old.js#L253) 生命周期函数
 
 ## diff 算法
+
+## 数组情况
+   如果 key 不一致，则直接跳出对比，接着取到所有的 oldChild， 存到 map中 key 等于 key，value 等于 fiber 对象，[这里可以体现](https://github.com/facebook/react/blob/master/packages/react-reconciler/src/ReactChildFiber.old.js#L842)，
+   然后遍历新 child，从 旧的 child 中的 map 中尝试 [取新child中对应的key](https://github.com/facebook/react/blob/23c80959ad79898877e76a61dffbe8c02ec3853e/packages/react-reconciler/src/ReactChildFiber.old.js#L631)，然后再从 map 中 [将其删除](https://github.com/facebook/react/blob/master/packages/react-reconciler/src/ReactChildFiber.old.js#L860) 
+
+## 单节点情况
+  ### 校验新旧 props 是否一致
+  ``` js
+    updateHostComponent = function(
+      current: Fiber,
+      workInProgress: Fiber,
+      type: Type,
+      newProps: Props,
+      rootContainerInstance: Container,
+    ) {
+      const oldProps = current.memoizedProps;
+      if (oldProps === newProps) {
+        // //在 mutation 模式下，这足以进行救助，因为即使孩子改变了，我们也不会触及这个节点。
+        // In mutation mode, this is sufficient for a bailout because
+        // we won't touch this node even if children changed.
+        return;
+      }
+      // ...若干行代码
+    }
+  ```

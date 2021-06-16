@@ -1563,6 +1563,7 @@ function renderRootConcurrent(root: FiberRoot, lanes: Lanes) {
     markRenderStarted(lanes);
   }
 
+  // 并发默认渲染，用于 concurrent 模式
   do {
     try {
       workLoopConcurrent();

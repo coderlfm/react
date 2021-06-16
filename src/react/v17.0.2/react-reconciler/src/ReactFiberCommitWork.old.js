@@ -2283,6 +2283,7 @@ function commitMutationEffectsOnFiber(finishedWork: Fiber, root: FiberRoot) {
       commitWork(current, finishedWork);
       break;
     }
+    // 更新
     case Update: {
       const current = finishedWork.alternate;
       commitWork(current, finishedWork);

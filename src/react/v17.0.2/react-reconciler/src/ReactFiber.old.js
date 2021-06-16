@@ -257,6 +257,7 @@ export function createWorkInProgress(current: Fiber, pendingProps: any): Fiber {
   let workInProgress = current.alternate; 
 
   // 如果当前只有一个 fiber ，只有在第一次render 的时候才是 null
+  //区分是在mount时还是在update时
   if (workInProgress === null) {
     // We use a double buffering pooling technique because we know that we'll
     // only ever need at most two versions of a tree. We pool the "other" unused
@@ -292,6 +293,7 @@ export function createWorkInProgress(current: Fiber, pendingProps: any): Fiber {
     workInProgress.alternate = current;
     current.alternate = workInProgress;
   } else {
+    // update 时 复用 属性
     workInProgress.pendingProps = pendingProps;
     // Needed because Blocks store data on type.
     workInProgress.type = current.type;

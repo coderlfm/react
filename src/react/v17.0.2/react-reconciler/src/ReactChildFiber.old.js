@@ -570,6 +570,7 @@ function ChildReconciler(shouldTrackSideEffects) {
     if (typeof newChild === 'object' && newChild !== null) {
       switch (newChild.$$typeof) {
         case REACT_ELEMENT_TYPE: {
+          // 如果两个key 一致，则进行更新
           if (newChild.key === key) {
             return updateElement(returnFiber, oldFiber, newChild, lanes);
           } else {
@@ -733,6 +734,12 @@ function ChildReconciler(shouldTrackSideEffects) {
     newChildren: Array<*>,
     lanes: Lanes,
   ): Fiber | null {
+
+    // 这个算法不能通过从两端搜索来优化，因为我们在纤维上没有反向指针。我想看看这个模型能走多远。如果它最终不值得进行权衡，我们可以稍后添加它。
+    // 即使是两个端点的优化，我们也希望优化的情况下，有很少的改变和暴力的比较，而不是去 Map。它会首先在forward-only模式中探索命中那条路径，并且只有当我们注意到我们需要很多前瞻性时才会去寻找 Map。这不能像两个结束的搜索那样处理反转，但这是不寻常的。此外，为了使两端优化在Iterables上工作，我们需要复制整个集合。
+    // 在第一次迭代中，我们只会在每次插入/移动时碰到坏情况(向Map添加所有内容)。
+    // 如果你改变这个代码，也更新reconcileChildrenIterator()，它使用相同的算法。
+    
     // This algorithm can't optimize by searching from both ends since we
     // don't have backpointers on fibers. I'm trying to see how far we can get
     // with that model. If it ends up not being worth the tradeoffs, we can
@@ -768,6 +775,7 @@ function ChildReconciler(shouldTrackSideEffects) {
     let lastPlacedIndex = 0;
     let newIdx = 0;
     let nextOldFiber = null;
+
     for (; oldFiber !== null && newIdx < newChildren.length; newIdx++) {
       if (oldFiber.index > newIdx) {
         nextOldFiber = oldFiber;
@@ -858,6 +866,8 @@ function ChildReconciler(shouldTrackSideEffects) {
             // current, that means that we reused the fiber. We need to delete
             // it from the child list so that we don't add it to the deletion
             // list.
+            // 新 fiber 还在工作中，但如果有电流，就意味着我们可以重复使用纤维。
+            // 我们需要将其从子列表中删除，这样就不会将其添加到删除列表中。
             existingChildren.delete(
               newFiber.key === null ? newIdx : newFiber.key,
             );
@@ -1133,6 +1143,7 @@ function ChildReconciler(shouldTrackSideEffects) {
               elementType.$$typeof === REACT_LAZY_TYPE &&
               resolveLazy(elementType) === child.type)
           ) {
+            // 删除其它兄弟节点，因为当前为调和单个子节点，表示只有一个子节点
             deleteRemainingChildren(returnFiber, child.sibling);
             const existing = useFiber(child, element.props);
             existing.ref = coerceRef(returnFiber, child, element);

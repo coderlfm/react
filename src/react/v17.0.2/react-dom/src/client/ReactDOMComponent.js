@@ -608,18 +608,20 @@ export function setInitialProperties(
   }
 }
 
+// 计算两个对象之间的差异。
 // Calculate the diff between the two objects.
 export function diffProperties(
-  domElement: Element,
-  tag: string,
-  lastRawProps: Object,
-  nextRawProps: Object,
-  rootContainerElement: Element | Document,
+  domElement: Element,  // 旧的 真实 dom
+  tag: string,          // 元素标签 div | h2 等
+  lastRawProps: Object, // 旧的 props
+  nextRawProps: Object, // 新的 props
+  rootContainerElement: Element | Document,   // 根容器
 ): null | Array<mixed> {
   if (__DEV__) {
     validatePropertiesInDevelopment(tag, nextRawProps);
   }
 
+  // 初始化 updatePayload
   let updatePayload: null | Array<any> = null;
 
   let lastProps: Object;
@@ -663,7 +665,10 @@ export function diffProperties(
   let propKey;
   let styleName;
   let styleUpdates = null;
+
+  // 遍历旧的 props
   for (propKey in lastProps) {
+    // 如果 新的 props 中包含旧的 的props 中的这个 属性key，则跳过
     if (
       nextProps.hasOwnProperty(propKey) ||
       !lastProps.hasOwnProperty(propKey) ||
@@ -703,9 +708,14 @@ export function diffProperties(
       (updatePayload = updatePayload || []).push(propKey, null);
     }
   }
+
+  // 遍历新的 props
   for (propKey in nextProps) {
+    // 取到 新的props 和旧的这次 遍历到的 值，旧的 props 有可能是 undefined
     const nextProp = nextProps[propKey];
     const lastProp = lastProps != null ? lastProps[propKey] : undefined;
+
+    // 如果 新旧的属性值相等，则跳过， 
     if (
       !nextProps.hasOwnProperty(propKey) ||
       nextProp === lastProp ||
@@ -713,6 +723,7 @@ export function diffProperties(
     ) {
       continue;
     }
+
     if (propKey === STYLE) {
       if (__DEV__) {
         if (nextProp) {
@@ -767,7 +778,9 @@ export function diffProperties(
         // TODO: It might be too late to clear this if we have children
         // inserted already.
       }
-    } else if (propKey === CHILDREN) {
+    } else if (propKey === CHILDREN) {            // children 发生变化
+      // 如果 children 是 字符串或者 数字类型，则直接push,
+      // 也是因为这里的原因，所以最后 commit 的时候 第 i 项是更新的key， 第 i+1 项是 更新的值
       if (typeof nextProp === 'string' || typeof nextProp === 'number') {
         (updatePayload = updatePayload || []).push(propKey, '' + nextProp);
       }
@@ -787,6 +800,9 @@ export function diffProperties(
         }
       }
       if (!updatePayload && lastProp !== nextProp) {
+        // onClick 会进入到这里
+        // 这是一个特例。如果任何侦听器更新，我们需要确保“current”props指针得到更新，
+        // 因此我们需要一个commit来更新这个元素。
         // This is a special case. If any listener updates we need to ensure
         // that the "current" props pointer gets updated so we need a commit
         // to update this element.
@@ -802,6 +818,8 @@ export function diffProperties(
       // ID so client and server IDs match and throws to rerender.
       nextProp.toString();
     } else {
+      //对于任何其他属性，我们总是将它添加到队列中，然后我们
+      //在提交期间使用允许的属性列表过滤掉它。
       // For any other property we always add it to the queue and then we
       // filter it out using the allowed property list during the commit.
       (updatePayload = updatePayload || []).push(propKey, nextProp);

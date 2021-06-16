@@ -27,20 +27,36 @@ function App() {
     }
   }, [])
 
-  const [conut, setCount] = useState(1)
+  const [count, setCount] = useState(1)
 
   // 事件系统
   // return <EventDemo/>
 
   // return <Hooks/>
   // fiber树
+
+  const a = <div>
+    <h2 key="hello">hello</h2>
+    <p key="world">world</p>
+  </div>
+
+  // 顺序不一致
+  // const b = <div>
+  //   <p key="world">world</p>
+  //   <h2 key="hello">hello</h2>
+  // </div>
+  
+  // 类型不一致
+  const b = <div>
+    <h6 key="hello">hello</h6>
+    <p key="world">world</p>
+  </div>
+
   return (
-    <div className="App">
-      <span onClick={() => {
-        debugger
-        setCount(conut + 1);
-      }}>我是span {conut}</span>
-      <h2>我是h2</h2>
+    <div className="App" onClick={() => setCount(count + 1)}>
+      {count % 2 ? a : b}
+      {/* <span>我是span {count}</span> */}
+      {/* <h2>我是h2</h2> */}
     </div>
   );
   {/* <span className={'app-span'} onClick={() => setCount(count + 1)}>App{count}</span> */ }
