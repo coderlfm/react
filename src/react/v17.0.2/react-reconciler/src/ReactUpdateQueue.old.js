@@ -166,12 +166,15 @@ if (__DEV__) {
 // 初始化更新对象
 export function initializeUpdateQueue<State>(fiber: Fiber): void {
   
+  // 对于HostRoot或者ClassComponent会使用initializeUpdateQueue创建updateQueue，然后将updateQueue挂载到fiber节点上
   // 创建一个更新，并将其挂载到 fiber 节点的 updateQueue 身上
   const queue: UpdateQueue<State> = {
-    // 初始值
+    // 初始值 //初始state，后面会基于这个state，根据Update计算新的state
     baseState: fiber.memoizedState,
-    firstBaseUpdate: null,
-    lastBaseUpdate: null,
+    firstBaseUpdate: null,    // Update形成的链表的头
+    lastBaseUpdate: null,     // Update形成的链表的尾
+    //新产生的update会以单向环状链表保存在shared.pending上，计算state的时候会剪开这个环状链表，
+    // 并且连接在			  //lastBaseUpdate后
     shared: {
       pending: null,
       interleaved: null,
