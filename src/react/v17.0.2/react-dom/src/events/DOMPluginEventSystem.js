@@ -631,6 +631,7 @@ export function dispatchEventForPluginEventSystem(
     }
   }
 
+  // 批量更新
   batchedEventUpdates(() =>
     dispatchEventsForPlugins(
       domEventName,

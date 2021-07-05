@@ -735,7 +735,7 @@ function ChildReconciler(shouldTrackSideEffects) {
     lanes: Lanes,
   ): Fiber | null {
 
-    // 这个算法不能通过从两端搜索来优化，因为我们在纤维上没有反向指针。我想看看这个模型能走多远。如果它最终不值得进行权衡，我们可以稍后添加它。
+    // 这个算法不能通过从两端搜索来优化，因为我们在 fiber 上没有反向指针。我想看看这个模型能走多远。如果它最终不值得进行权衡，我们可以稍后添加它。
     // 即使是两个端点的优化，我们也希望优化的情况下，有很少的改变和暴力的比较，而不是去 Map。它会首先在forward-only模式中探索命中那条路径，并且只有当我们注意到我们需要很多前瞻性时才会去寻找 Map。这不能像两个结束的搜索那样处理反转，但这是不寻常的。此外，为了使两端优化在Iterables上工作，我们需要复制整个集合。
     // 在第一次迭代中，我们只会在每次插入/移动时碰到坏情况(向Map添加所有内容)。
     // 如果你改变这个代码，也更新reconcileChildrenIterator()，它使用相同的算法。
@@ -1110,6 +1110,7 @@ function ChildReconciler(shouldTrackSideEffects) {
   ): Fiber {
     const key = element.key;
     let child = currentFirstChild;
+    // 第一次 render  child 为 null
     while (child !== null) {
       // TODO: If key === null and child.key === null, then this only applies to
       // the first item in the list.
@@ -1327,9 +1328,7 @@ function ChildReconciler(shouldTrackSideEffects) {
       }
     }
     if (typeof newChild === 'undefined' && !isUnkeyedTopLevelFragment) {
-      // If the new child is undefined, and the return fiber is a composite
-      // component, throw an error. If Fiber return types are disabled,
-      // we already threw above.
+      // If the new child is undefined, and the return fiber is a composite component, throw an error. If Fiber return types are disabled, we already threw above.
       switch (returnFiber.tag) {
         case ClassComponent: {
           if (__DEV__) {

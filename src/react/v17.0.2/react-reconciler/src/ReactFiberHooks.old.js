@@ -1992,6 +1992,10 @@ function dispatchAction<S, A>(
         try {
           const currentState: S = (queue.lastRenderedState: any);
           const eagerState = lastRenderedReducer(currentState, action);
+
+          // 将急切计算的状态和用于计算它的reducer保存在更新对象上。
+          // 如果 reducer 在我们进入渲染阶段时还没有改变，那么无需再次调用 reducer ，就可以使用 eager 状态。
+          
           // Stash the eagerly computed state, and the reducer used to compute
           // it, on the update object. If the reducer hasn't changed by the
           // time we enter the render phase, then the eager state can be used

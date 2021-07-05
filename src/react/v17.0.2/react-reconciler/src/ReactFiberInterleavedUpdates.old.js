@@ -10,6 +10,7 @@
 import type {UpdateQueue as HookQueue} from './ReactFiberHooks.old';
 import type {SharedQueue as ClassQueue} from './ReactUpdateQueue.old';
 
+// 在当前渲染期间接收更新的所有更新队列的数组。 当这个渲染退出时，无论是因为它完成还是因为它被中断，交错更新将被转移到队列的主要部分。
 // An array of all update queues that received updates during the current
 // render. When this render exits, either because it finishes or because it is
 // interrupted, the interleaved updates will be transfered onto the main part
@@ -17,7 +18,7 @@ import type {SharedQueue as ClassQueue} from './ReactUpdateQueue.old';
 let interleavedQueues: Array<
   HookQueue<any, any> | ClassQueue<any>,
 > | null = null;
-
+ 
 export function pushInterleavedQueue(
   queue: HookQueue<any, any> | ClassQueue<any>,
 ) {
@@ -30,8 +31,10 @@ export function pushInterleavedQueue(
 
 export function enqueueInterleavedUpdates() {
 
-/*   将交错更新传输到主队列上。每个队列都有一个“挂起”字段和一个“交错”字段。
-  当它们不为空时，它们指向循环链表中的最后一个节点。我们需要将交叉列表添加到待处理列表的末尾，方法是将它们连接到一个单一的循环列表中。 */
+  /*   将并发更新传输到主队列。每个队列都有一个“pending”字段和一个“interleaved”字段。
+  当它们不为空时，它们指向循环链表中的最后一个节点。我们需要将交错列表附加到待处理列表的末尾，方法是将它们连接到一个单一的循环列表中。 */
+  // Transfer the interleaved updates onto the main queue. Each queue has a `pending` field and an `interleaved` field. When they are not null, they point to the last node in a circular linked list. We need to append the interleaved list to the end of the pending list by joining them into a single, circular list.
+  
   // Transfer the interleaved updates onto the main queue. Each queue has a
   // `pending` field and an `interleaved` field. When they are not null, they
   // point to the last node in a circular linked list. We need to append the

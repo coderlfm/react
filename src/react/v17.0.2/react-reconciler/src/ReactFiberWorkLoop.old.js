@@ -533,14 +533,12 @@ export function scheduleUpdateOnFiber(
   // 如果当更新是同步更新的赛道  第一次 render 是 同步更新
   if (lane === SyncLane) {
     if (
-      // Check if we're inside unbatchedUpdates
+      // Check if we're inside unbatchedUpdates 检查我们是否在 非批量更新 中 
       (executionContext & LegacyUnbatchedContext) !== NoContext &&
-      // Check if we're not already rendering
+      // Check if we're not already rendering 检查我们是否还没有渲染 
       (executionContext & (RenderContext | CommitContext)) === NoContext
     ) {
-      // This is a legacy edge case. The initial mount of a ReactDOM.render-ed
-      // root inside of batchedUpdates should be synchronous, but layout updates
-      // should be deferred until the end of the batch.
+      // This is a legacy edge case. The initial mount of a ReactDOM.render-edroot inside of batchedUpdates should be synchronous, but layout updates should be deferred until the end of the batch.
 
       // 如果是本次更新是同步的，并且当前还未渲染，意味着主线程空闲，并没有React的
       // 更新任务在执行，那么调用performSyncWorkOnRoot开始执行同步任务
@@ -557,6 +555,8 @@ export function scheduleUpdateOnFiber(
         executionContext === NoContext &&
         (fiber.mode & ConcurrentMode) === NoMode
       ) {
+        // 现在刷新同步工作，除非我们已经在工作或在批处理中。这是有意在 scheduleUpdateOnFiber 而不是 scheduleCallbackForFiber 内部，
+        // 以保留在不立即刷新回调的情况下安排回调的能力。我们仅对用户启动的更新执行此操作，以保留传统模式的历史行为。 
         // Flush the synchronous work now, unless we're already working or inside
         // a batch. This is intentionally inside scheduleUpdateOnFiber instead of
         // scheduleCallbackForFiber to preserve the ability to schedule a callback
@@ -569,6 +569,7 @@ export function scheduleUpdateOnFiber(
     }
   } else {
     // Schedule other updates after in case the callback is sync.
+    //在回调同步后安排其他更新。
     ensureRootIsScheduled(root, eventTime);
   }
 
@@ -640,13 +641,19 @@ function markUpdateLaneFromFiberToRoot(
   }
 }
 
+// 判断是否并发更新
 export function isInterleavedUpdate(fiber: Fiber, lane: Lane) {
   return (
+    // 通过与光纤所属的根进行比较来稍微优化。需要一些重构。
+    // 不过这没什么大不了的，因为并发应用程序很少有多个根。
     // TODO: Optimize slightly by comparing to root that fiber belongs to.
     // Requires some refactoring. Not a big deal though since it's rare for
     // concurrent apps to have more than a single root.
     workInProgressRoot !== null &&
     (fiber.mode & ConcurrentMode) !== NoMode &&
+    // 如果这是渲染阶段更新（即 UNSAFE_componentWillReceiveProps），
+    // 则不要将其视为交错更新。这种模式伴随着警告，但我们还没有完全弃用它。
+    // 我们可以在启用 deferRenderPhaseUpdateToNextBatch 标志后删除。
     // If this is a render phase update (i.e. UNSAFE_componentWillReceiveProps),
     // then don't treat this as an interleaved update. This pattern is
     // accompanied by a warning but we haven't fully deprecated it yet. We can
@@ -655,6 +662,10 @@ export function isInterleavedUpdate(fiber: Fiber, lane: Lane) {
       (executionContext & RenderContext) === NoContext)
   );
 }
+
+// 使用此函数为根调度任务。每个根只有一个任务;如果一个任务已经被调度，
+// 我们将检查以确保现有任务的优先级与根处理的下一个级别的优先级相同。
+// 每次更新时都会调用此函数，并在退出任务之前调用此函数。
 
 // Use this function to schedule a task for a root. There's only one task per
 // root; if a task was already scheduled, we'll check to make sure the priority
@@ -723,6 +734,7 @@ function ensureRootIsScheduled(root: FiberRoot, currentTime: number) {
       scheduleSyncCallback(performSyncWorkOnRoot.bind(null, root));
     }
     if (supportsMicrotasks) {
+      // 刷新微任务中的队列。
       // Flush the queue in a microtask.
       scheduleMicrotask(flushSyncCallbacks);
     } else {
@@ -1259,6 +1271,7 @@ function prepareFreshStack(root: FiberRoot, lanes: Lanes) {
 
   const timeoutHandle = root.timeoutHandle;
   if (timeoutHandle !== noTimeout) {
+    // 根之前挂起并安排了一个超时以提交回退状态。现在我们有了额外的工作，取消超时。
     // The root previous suspended and scheduled a timeout to commit a fallback
     // state. Now that we have additional work, cancel the timeout.
     root.timeoutHandle = noTimeout;
@@ -1285,6 +1298,7 @@ function prepareFreshStack(root: FiberRoot, lanes: Lanes) {
   workInProgressRootUpdatedLanes = NoLanes;
   workInProgressRootPingedLanes = NoLanes;
 
+  // 将并发更新加入队列
   enqueueInterleavedUpdates();
 
   if (__DEV__) {
@@ -1439,6 +1453,7 @@ function renderRootSync(root: FiberRoot, lanes: Lanes) {
   // 取到 dispatch，第一次是null，会取到一个 ContextOnlyDispatcher
   const prevDispatcher = pushDispatcher();
 
+  // 如果根或通道已经改变，抛出现有堆栈并准备一个新的。否则我们就继续上次的内容。
   // If the root or lanes have changed, throw out the existing stack
   // and prepare a fresh one. Otherwise we'll continue where we left off.
   if (workInProgressRoot !== root || workInProgressRootRenderLanes !== lanes) {
@@ -1516,9 +1531,11 @@ function renderRootSync(root: FiberRoot, lanes: Lanes) {
   return workInProgressRootExitStatus;
 }
 
+// 工作循环是一个非常热的路径。告诉 Closure 不要内联它
 // The work loop is an extremely hot path. Tell Closure not to inline it.
 /** @noinline */
 function workLoopSync() {
+  // 已经超时，所以在不检查是否需要让步的情况下执行工作
   // Already timed out, so perform work without checking if we need to yield.
   while (workInProgress !== null) {
     performUnitOfWork(workInProgress);
@@ -1614,9 +1631,7 @@ function workLoopConcurrent() { // 准备执行工作循环
 }
 
 function performUnitOfWork(unitOfWork: Fiber): void {
-  // The current, flushed, state of this fiber is the alternate. Ideally
-  // nothing should rely on this, but relying on it here means that we don't
-  // need an additional field on the work in progress.
+  // The current, flushed, state of this fiber is the alternate. Ideally nothing should rely on this, but relying on it here means that we don't need an additional field on the work in progress.
   const current = unitOfWork.alternate;
   setCurrentDebugFiberInDEV(unitOfWork);
 
@@ -1663,7 +1678,8 @@ function completeUnitOfWork(unitOfWork: Fiber): void {
     // 第一次创建的时候这里拿到的 alternate 是 null 
     const current = completedWork.alternate;
     const returnFiber = completedWork.return;
-
+    
+    // 检查工作是否完成或是否有东西抛出。 
     // Check if the work completed or if something threw.
     if ((completedWork.flags & Incomplete) === NoFlags) {
       setCurrentDebugFiberInDEV(completedWork);
@@ -1774,6 +1790,12 @@ function commitRootImpl(root, renderPriorityLevel) {
 
   // 在执行本次 mutation 前先看一下是否还有未完成的操作
   do {
+    // `flushPassiveEffects` 会在最后调用 `flushSyncUpdateQueue`，
+    // 这意味着 `flushPassiveEffects` 有时会产生额外的被动效果。
+    // 所以我们需要在循环中不断刷新，直到没有更多的待处理效果。 
+    // TODO: 如果 `flushPassiveEffects` 最后没有自动刷新同步工作，可能会更好，以避免像这样的分解危险。 
+
+    
     // `flushPassiveEffects` will call `flushSyncUpdateQueue` at the end, which
     // means `flushPassiveEffects` will sometimes result in additional
     // passive effects. So we need to keep flushing in a loop until there are
@@ -1860,6 +1882,8 @@ function commitRootImpl(root, renderPriorityLevel) {
   // might get scheduled in the commit phase. (See #16714.)
   // TODO: Delete all other places that schedule the passive effect callback
   // They're redundant.
+
+  // 添加 effect 回调
   if (
     (finishedWork.subtreeFlags & PassiveMask) !== NoFlags ||
     (finishedWork.flags & PassiveMask) !== NoFlags
@@ -2091,6 +2115,12 @@ function commitRootImpl(root, renderPriorityLevel) {
 }
 
 export function flushPassiveEffects(): boolean {
+
+  // 返回被动效果是否被刷新。
+  // TODO: 将此检查与flushPassiveEFfectsImpl 中的检查结合起来。我们可能应该将这两个功能结合起来。
+  // 我相信它们最初只是分开的，因为我们曾经用`Scheduler.runWithPriority` 包装它，
+  // 它接受一个函数。但是现在我们在 React 内部跟踪优先级，所以我们可以直接改变变量。 
+  
   // Returns whether passive effects were flushed.
   // TODO: Combine this check with the one in flushPassiveEFfectsImpl. We should
   // probably just combine the two functions. I believe they were only separate
@@ -2159,7 +2189,10 @@ function flushPassiveEffectsImpl() {
   const prevExecutionContext = executionContext;
   executionContext |= CommitContext;
 
+  // 执行 卸载函数 
   commitPassiveUnmountEffects(root.current);
+
+  // 执行 挂载函数
   commitPassiveMountEffects(root, root.current);
 
   // TODO: Move to commitPassiveMountEffects

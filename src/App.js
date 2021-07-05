@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, } from 'react';
+import ReactDOM from 'react-dom'
 import State from './components/State'
 import LanesDemo from './components/LanesDemo'
 import AppSibling from './components/AppSibling'
@@ -22,12 +23,14 @@ function App() {
 
   useEffect(() => {
     console.log('useEffect被执行');
+    
+console.log("%c'useEffect被执行 %c", "color:green",)
     return () => {
       console.log('useEffect 卸载函数被执行');
     }
   }, [])
 
-  const [count, setCount] = useState(1)
+  const [flag, setFlag] = useState(true)
 
   // 事件系统
   // return <EventDemo/>
@@ -35,28 +38,28 @@ function App() {
   // return <Hooks/>
   // fiber树
 
-  const a = <div>
-    <h2 key="hello">hello</h2>
-    <p key="world">world</p>
-  </div>
-
-  // 顺序不一致
-  // const b = <div>
-  //   <p key="world">world</p>
-  //   <h2 key="hello">hello</h2>
-  // </div>
-  
-  // 类型不一致
-  const b = <div>
-    <h6 key="hello">hello</h6>
-    <p key="world">world</p>
-  </div>
-
   return (
-    <div className="App" onClick={() => setCount(count + 1)}>
-      {count % 2 ? a : b}
+    <div className="App" onClick={() => {
+      debugger;
+      setFlag(!flag)
+    }}>
+      {
+        flag
+          ? (
+            <div>
+              <h2 key="hello" className="h2-wrap">hello</h2>
+              <p key="world" className="p-wrap">world</p>
+            </div>
+          )
+          : (<div>
+            <h6 key="hello">hello</h6>
+            <p key="world">world</p>
+          </div>)
+      }
+
       {/* <span>我是span {count}</span> */}
       {/* <h2>我是h2</h2> */}
+      {/* {ReactDOM.createPortal} */}
     </div>
   );
   {/* <span className={'app-span'} onClick={() => setCount(count + 1)}>App{count}</span> */ }

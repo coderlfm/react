@@ -668,10 +668,10 @@ export function markRootUpdated(
 
   /* 如果有任何暂停的过渡，则此新更新可能会取消阻止它们。 清除暂停的车道，以便我们可以尝试再次渲染它们。
 
-  TODO：实际上，我们只需要取消挂起更新光纤的“ subtreeLanes”中的通道或返回路径的更新通道即可。 
-  这将排除不相关的同级树中的暂挂更新，此更新无法解除阻止。
+    我们实际上只需要取消挂起更新 fiber 的“subtreeLanes”中的通道，或返回路径的更新 lanes 。这将排除不相关的兄弟树中挂起的更新，因为此更新无法取消阻止它。 
 
-  如果传入的更新是空闲的，则不执行此操作，因为直到所有常规更新都完成后，我们才处理空闲的更新。 它不可能解开过渡。  */
+    如果传入的更新是空闲的，我们不会这样做，因为在所有常规更新完成之前，我们永远不会处理空闲更新；不会解除对转换的阻止。 
+  */
   
   // 如果不相对 则把以下设置为 0
   if (updateLane !== IdleLane) {
@@ -685,7 +685,7 @@ export function markRootUpdated(
   * 那么eventTimes是这种形式： [ -1, -1, -1, 44573.3452, -1, -1 ]
   * 用一个数组去存储eventTimes，-1表示空位，非-1的位置与lanes中的1的位置相同
   * */
-  const eventTimes = root.eventTimes;
+  const eventTimes = root.eventTimes;   // 长度为 31 的数组 每个值默认是 0
   // 根据 更新等级返回 索引
   const index = laneToIndex(updateLane);
   // We can always overwrite an existing timestamp because we prefer the most

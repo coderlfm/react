@@ -1137,7 +1137,8 @@ function pushHostRootContext(workInProgress) {
       root.pendingContext !== root.context,
     );
   } else if (root.context) {
-    // Should always be set
+    // Should always be set 应始终设置
+    // 推送顶级上下文对象
     pushTopLevelContextObject(workInProgress, root.context, false);
   }
   pushHostContainer(workInProgress, root.containerInfo);
@@ -1145,7 +1146,7 @@ function pushHostRootContext(workInProgress) {
 
 // 更新根组件
 function updateHostRoot(current, workInProgress, renderLanes) {
-  // 暂时没看
+  // 在堆栈中记录了一些数据
   pushHostRootContext(workInProgress);
   const updateQueue = workInProgress.updateQueue;
   invariant(
@@ -1165,6 +1166,10 @@ function updateHostRoot(current, workInProgress, renderLanes) {
   // 计算到新的 state 给 memoizedState 添加上值  cache，element
   processUpdateQueue(workInProgress, nextProps, null, renderLanes);
   // 取到新的 state
+  /**
+   cache: Map(0) {}
+   element: {$$typeof: Symbol(react.element)
+   */
   const nextState = workInProgress.memoizedState;
 
   const root: FiberRoot = workInProgress.stateNode;
@@ -3503,6 +3508,9 @@ function beginWork(
     didReceiveUpdate = false;
   }
 
+  // 在进入开始阶段之前，清除挂起的更新优先级
+  // 这假设我们即将评估组件并处理更新队列。
+  // 但是，有一个例外：SimpleMemoComponent 有时会在开始阶段的后期退出。 这表明我们应该将此分配移出公共路径并进入每个分支。
   // Before entering the begin phase, clear pending update priority.
   // TODO: This assumes that we're about to evaluate the component and process
   // the update queue. However, there's an exception: SimpleMemoComponent

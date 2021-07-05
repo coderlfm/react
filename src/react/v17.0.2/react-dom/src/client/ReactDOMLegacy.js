@@ -253,6 +253,8 @@ function legacyRenderSubtreeIntoContainer(
     // Update  批量更新
     updateContainer(children, fiberRoot, parentComponent, callback);
   }
+
+  // 获取根的真实dom
   return getPublicRootInstance(fiberRoot);
 }
 

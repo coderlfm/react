@@ -935,7 +935,7 @@ function completeWork(
             currentHostContext,
             workInProgress,
           );
-          
+          // debugger
           // 将当前元素的所有 真实dom child 追加到 当前元素下
           appendAllChildren(instance, workInProgress, false, false);
 

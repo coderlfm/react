@@ -191,6 +191,7 @@ export function cloneUpdateQueue<State>(
   current: Fiber,
   workInProgress: Fiber,
 ): void {
+  //从当前克隆更新队列。除非它已经是一个克隆。 
   // Clone the update queue from current. Unless it's already a clone.
   const queue: UpdateQueue<State> = (workInProgress.updateQueue: any);
   const currentQueue: UpdateQueue<State> = (current.updateQueue: any);
@@ -241,13 +242,17 @@ export function enqueueUpdate<State>(
   pending: null */
   const sharedQueue: SharedQueue<State> = (updateQueue: any).shared;
 
-  // 进入 elese
+  // 判断是否并发更新，第一次render会进入 else
   if (isInterleavedUpdate(fiber, lane)) {
     const interleaved = sharedQueue.interleaved;
+    //这是第一次更新。创建一个循环列表。 
     if (interleaved === null) {
       // This is the first update. Create a circular list.
       update.next = update;
-      // At the end of the current render, this queue's interleaved updates will
+
+      // 将当前更新push 到并发更新队列中
+      // 在当前渲染结束时，此队列的并发更新将传输到挂起队列
+      // At the end of the current render, this queue's interleaved updates will 
       // be transfered to the pending queue.
       pushInterleavedQueue(sharedQueue);
     } else {
@@ -257,18 +262,38 @@ export function enqueueUpdate<State>(
     sharedQueue.interleaved = update;
   } else {
     
+  //   {
+  //    eventTime: 3081886.5,
+  //    lane: 1,
+  //    tag: 0,
+  //    payload: {
+  //        element: {
+  //            key: null,
+  //            ref: null,
+  //            props: {},
+  //            _owner: null
+  //         }
+  //     },
+  //    callback: null,
+  //    next: null
+  // }
+
     const pending = sharedQueue.pending;
 
+    // 创建一个循环链表
     // 第一次更新的 pending 是null
     if (pending === null) {
-      // This is the first update. Create a circular list. 这是第一次更新。创建一个循环列表。
+      // This is the first update. Create a circular list. 
       update.next = update;
+      // 如果是第一次更新 则数据结构如下
+      // sharedQueue.pending = update;  update.next = update; 
     } else {
       update.next = pending.next;
       pending.next = update;
     }
     
-    // 将 pending 设置为当前更新，会同时给 fiber.updateQueue.shared 设置,该值第一次是 null
+    // 将 pending 设置为当前更新，
+    // 会同时给 fiber.updateQueue.shared 设置,该值第一次是 null
     sharedQueue.pending = update;
   }
 
@@ -437,7 +462,7 @@ function getStateFromUpdate<State>(
         (workInProgress.flags & ~ShouldCapture) | DidCapture;
     }
     // Intentional fallthrough
-    case UpdateState: {
+    case UpdateState: {     // 更新 state
       const payload = update.payload;
       let partialState;
       if (typeof payload === 'function') {
@@ -493,6 +518,8 @@ export function processUpdateQueue<State>(
   instance: any,
   renderLanes: Lanes,
 ): void {
+  // 这在 ClassComponent 或 HostRoot 上总是非空的
+  // 从workInProgress节点上取出updateQueue
   // This is always non-null on a ClassComponent or HostRoot
   const queue: UpdateQueue<State> = (workInProgress.updateQueue: any);
 
@@ -502,29 +529,51 @@ export function processUpdateQueue<State>(
     currentlyProcessingQueue = queue.shared;
   }
 
+  // 取出queue上的baseUpdate队列（下面称遗留的队列），
+  // 然后准备接入本次新产生的更新队列（下面称新队列）
+  // 都为 null
   let firstBaseUpdate = queue.firstBaseUpdate;
   let lastBaseUpdate = queue.lastBaseUpdate;
 
+  // 取出新队列
+  // 检查是否有挂起的更新。 如果是，将它们转移到基本队列。
   // Check if there are pending updates. If so, transfer them to the base queue.
   let pendingQueue = queue.shared.pending;
 
-  // 第一次 render 时是 null
+  // 下面的操作，实际上就是将新队列连接到上次遗留的队列中。
   if (pendingQueue !== null) {
     queue.shared.pending = null;
 
+    // 待处理队列是循环的。 断开 first 和 last 之间的指针，使其成为非圆形。
     // The pending queue is circular. Disconnect the pointer between first
-    // and last so that it's non-circular.
+    // and last so that it's non-circular. 
     const lastPendingUpdate = pendingQueue;
-    const firstPendingUpdate = lastPendingUpdate.next;
-    lastPendingUpdate.next = null;
+    const firstPendingUpdate = lastPendingUpdate.next;  
+    
+    // 将遗留的队列最后一个元素指向null，实现断开环状链表,然后在尾部接入新队列
+    // 第一次 update 为 pendinQueue.next，最后一次更新为pendingQueue，
+    // 设置完后，剪断这个环形链表，如果这俩是一致的话，则 两个 next都会被置空
+    lastPendingUpdate.next = null;  // 将 lastpending 的 next 置空  
+    // 将 pending 的更新插入到 base queue
     // Append pending updates to base queue
     if (lastBaseUpdate === null) {
+      // 记录第一次 的update
       firstBaseUpdate = firstPendingUpdate;
     } else {
+      // 将遗留的队列中最后一个update的next指向新队列第一个update
+      // 完成接入
       lastBaseUpdate.next = firstPendingUpdate;
     }
+    // 修改遗留队列的尾部为新队列的尾部
+    // 记录最后一次 update
     lastBaseUpdate = lastPendingUpdate;
 
+    // 如果有一个 current 队列，并且它与 base queue 不同，那么我们也需要将更新传输到该队列。 
+    // 因为 base queue 是一个没有循环的单向链表，我们可以附加到两个列表并利用结构共享。
+    // 拷贝 workInProgress 的 base queue 单向链表
+
+    // TODO: 因为如果本次的渲染被打断，那么下次再重新执行任务的时候，workInProgress节点复制
+    // 自current节点，它上面的baseUpdate队列会保有这次的update，保证update不丢失。
     // If there's a current queue, and it's different from the base queue, then
     // we need to transfer the updates to that queue, too. Because the base
     // queue is a singly-linked list with no cycles, we can append to both
@@ -545,25 +594,45 @@ export function processUpdateQueue<State>(
       }
     }
   }
-
+  // 至此，新队列已经合并到遗留队列上，firstBaseUpdate作为
+  // 这个新合并的队列，会被循环处理
+  //  这些值可能会随着我们处理队列而改变。
   // These values may change as we process the queue.
   if (firstBaseUpdate !== null) {
+    // 取到baseState
     // Iterate through the list of updates to compute the result.
     let newState = queue.baseState;
+    // 声明newLanes，它会作为本轮更新处理完成的
+    // 优先级，最终标记到WIP节点上
     // TODO: Don't need to accumulate this. Instead, we can remove renderLanes
     // from the original lanes.
     let newLanes = NoLanes;
 
+    // 声明newBaseState，注意接下来它被赋值的时机，还有前置条件：
+    // 1. 当有优先级被跳过，newBaseState赋值为newState，
+    // 也就是queue.baseState
+    // 2. 当都处理完成后没有优先级被跳过，newBaseState赋值为
+    // 本轮新计算的state，最后更新到queue.baseState上
     let newBaseState = null;
+
+    // 使用newFirstBaseUpdate 和 newLastBaseUpdate 
+    // 来表示本次更新产生的的baseUpdate队列，目的是截取现有队列中
+    // 第一个被跳过的低优先级update到最后的所有update，最后会被更新到
+    // updateQueue的firstBaseUpdate 和 lastBaseUpdate上
+    // 作为下次渲染的遗留队列（baseUpdate）
     let newFirstBaseUpdate = null;
     let newLastBaseUpdate = null;
 
+    // 从头开始循环
     let update = firstBaseUpdate;
     do {
 
       // 取到 更新赛道 和 时间
       const updateLane = update.lane;
       const updateEventTime = update.eventTime;
+
+      // isSubsetOfLanes函数的意义是，判断当前更新的优先级（updateLane）
+      // 是否在渲染优先级（renderLanes）中如果不在，那么就说明优先级不足
       if (!isSubsetOfLanes(renderLanes, updateLane)) {
         // Priority is insufficient. Skip this update. If this is the first
         // skipped update, the previous update/state is the new base
@@ -578,17 +647,35 @@ export function processUpdateQueue<State>(
 
           next: null,
         };
+
+        // 优先级不足，将update添加到本次的baseUpdate队列中
         if (newLastBaseUpdate === null) {
           newFirstBaseUpdate = newLastBaseUpdate = clone;
+          // newBaseState 更新为前一个 update 任务的结果，下一轮
+          // 持有新优先级的渲染过程处理更新队列时，将会以它为基础进行计算。
           newBaseState = newState;
         } else {
+          // 如果baseUpdate队列中已经有了update，那么将当前的update
+          // 追加到队列尾部
           newLastBaseUpdate = newLastBaseUpdate.next = clone;
         }
+        /* *
+        * newLanes会在最后被赋值到workInProgress.lanes上，而它又最终
+        * 会被收集到root.pendingLanes。
+        *  再次更新时会从root上的pendingLanes中找出渲染优先级（renderLanes），
+        * renderLanes含有本次跳过的优先级，再次进入processUpdateQueue时，
+        * update的优先级符合要求，被更新掉，低优先级任务因此被重做
+        * */
         // Update the remaining priority in the queue.
         newLanes = mergeLanes(newLanes, updateLane);
       } else {
         // This update does have sufficient priority.
-        // 此更新确实具有足够的优先级。
+        // 进到这个判断说明现在处理的这个update在优先级不足的update之后，
+        // 原因有二：
+        // 第一，优先级足够；
+        // 第二，newLastBaseUpdate不为null说明已经有优先级不足的update了
+        // 然后将这个高优先级放入本次的baseUpdate，实现之前提到的从updateQueue中
+        // 截取低优先级update到最后一个update
 
         if (newLastBaseUpdate !== null) {
           const clone: Update<State> = {
@@ -607,7 +694,7 @@ export function processUpdateQueue<State>(
           newLastBaseUpdate = newLastBaseUpdate.next = clone;
         }
 
-        // 获取新状态
+        // 获取新状态  // 处理更新，计算出新结果
         // Process this update.
         /* cache: Map(0) {}
         element: $$typeof: Symbol(react.element)
@@ -616,6 +703,7 @@ export function processUpdateQueue<State>(
                   ref: null
                   type: ƒ App()
                   _owner: null */
+        // 将 newState.element 设置为 update.payload.element
         newState = getStateFromUpdate(
           workInProgress,
           queue,
@@ -624,6 +712,9 @@ export function processUpdateQueue<State>(
           props,
           instance,
         );
+
+        // 这里的callback是setState的第二个参数，属于副作用，
+        // 会被放入queue的副作用队列里
         const callback = update.callback;
         if (callback !== null) {
           workInProgress.flags |= Callback;
@@ -636,16 +727,25 @@ export function processUpdateQueue<State>(
         }
       }
       // 第一次 render 的 next 是 null
+      // 移动指针实现遍历
       update = update.next;
       if (update === null) {
-        pendingQueue = queue.shared.pending;
+        // 已有的队列处理完了，检查一下有没有新进来的，有的话
+        // 接在已有队列后边继续处理
+        pendingQueue = queue.shared.pending;  // 在上述代码中已置空
         if (pendingQueue === null) {
+          // 如果没有等待处理的update，那么跳出循环
           // 说明此次更新已完成 结束循环
           break;
         } else {
-          // An update was scheduled from inside a reducer. Add the new
-          // pending updates to the end of the list and keep processing.
+          // 如果此时又有了新的update进来，那么将它接入到之前合并好的队列中
+          // 更新是从 reducer 内部安排的。将新的 pending更新添加到列表的末尾并继续处理。 
+          // An update was scheduled from inside a reducer. 
+          // Add the new pending updates to the end of the list and keep processing.
           const lastPendingUpdate = pendingQueue;
+
+          // 故意不健全。待处理的更新形成一个循环列表，但我们在将它们传输到基本队列时解开它们。 
+
           // Intentionally unsound. Pending updates form a circular list, but we
           // unravel them when transferring them to the base queue.
           const firstPendingUpdate = ((lastPendingUpdate.next: any): Update<State>);
@@ -656,19 +756,27 @@ export function processUpdateQueue<State>(
         }
       }
     } while (true);
-
+   // 如果没有低优先级的更新，那么新的newBaseState就被赋值为
+   // 刚刚计算出来的state
     // 将新的 state 存下来
     if (newLastBaseUpdate === null) {
+      /**
+        cache: Map(0) {}
+        element:  {$$typeof: Symbol(react.element),...}
+       */
       newBaseState = newState;
     }
-
+    // 更新到 workInProgress.updateQueue 中
     queue.baseState = ((newBaseState: any): State);
     queue.firstBaseUpdate = newFirstBaseUpdate;
     queue.lastBaseUpdate = newLastBaseUpdate;
 
+    // 交错更新存储在单独的队列中。 我们不会在此渲染期间处理它们，但我们确实需要跟踪剩余的车道。
+    
     // Interleaved updates are stored on a separate queue. We aren't going to
     // process them during this render, but we do need to track which lanes
     // are remaining.
+    
     // 第一次 render 以下的怕判断都不会进去
     const lastInterleaved = queue.shared.interleaved;
     if (lastInterleaved !== null) {
@@ -678,6 +786,8 @@ export function processUpdateQueue<State>(
         interleaved = ((interleaved: any).next: Update<State>);
       } while (interleaved !== lastInterleaved);
     } else if (firstBaseUpdate === null) {
+      // `queue.lanes` 用于纠缠过渡。 一旦队列为空，我们可以将其设置回零。
+      
       // `queue.lanes` is used for entangling transitions. We can set it back to
       // zero once the queue is empty.
       queue.shared.lanes = NoLanes;

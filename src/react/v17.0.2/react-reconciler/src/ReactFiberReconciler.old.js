@@ -389,6 +389,7 @@ export function getPublicRootInstance(
     case HostComponent:
       return getPublicInstance(containerFiber.child.stateNode);
     default:
+      // 返回真实 dom
       return containerFiber.child.stateNode;
   }
 }

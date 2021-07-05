@@ -111,7 +111,7 @@ ReactDOMRoot.prototype.unmount = ReactDOMLegacyRoot.prototype.unmount = function
   });
 };
 
-// 初始化rendr 时 options 的值是 { hydrate: true, } 和 undefined，非服务端渲染时是 undefined
+// legacy  模式 render() 初始化rendr 时 options 的值是 { hydrate: true, } 和 undefined，非服务端渲染时是 undefined
 function createRootImpl(
   container: Container,
   tag: RootTag,
@@ -176,6 +176,7 @@ function createRootImpl(
   return root;
 }
 
+// concurrent 模式
 export function createRoot(
   container: Container,
   options?: RootOptions,

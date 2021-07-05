@@ -505,6 +505,7 @@ export function createFiberFromTypeAndProps(
   lanes: Lanes,
 ): Fiber {
   let fiberTag = IndeterminateComponent;
+  // 如果我们知道最终类型是什么，则设置 resolved tyle, IE。这不是 lazy。 
   // The resolved type is set if we know what the final type will be. I.e. it's not lazy.
   let resolvedType = type;
   if (typeof type === 'function') {

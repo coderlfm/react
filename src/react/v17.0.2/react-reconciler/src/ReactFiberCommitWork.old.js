@@ -1547,6 +1547,7 @@ function commitPlacement(finishedWork: Fiber): void {
   }
 
   // Recursively insert all host nodes into the parent.
+  // 递归向上找到 有真实 dom 的fiber
   const parentFiber = getHostParentFiber(finishedWork);
 
   // Note: these two variables *must* always be updated together.
@@ -1554,15 +1555,15 @@ function commitPlacement(finishedWork: Fiber): void {
   let isContainer;
   const parentStateNode = parentFiber.stateNode;
   switch (parentFiber.tag) {
-    case HostComponent:
+    case HostComponent:     // 原生dom 标签
       parent = parentStateNode;
       isContainer = false;
       break;
-    case HostRoot:
+    case HostRoot:          // 根元素
       parent = parentStateNode.containerInfo;
       isContainer = true;
       break;
-    case HostPortal:
+    case HostPortal:        // 通过 createPortal 创建的元素
       parent = parentStateNode.containerInfo;
       isContainer = true;
       break;
@@ -1576,15 +1577,19 @@ function commitPlacement(finishedWork: Fiber): void {
   }
   if (parentFiber.flags & ContentReset) {
     // Reset the text content of the parent before doing any insertions
+    // 在执行任何插入之前，重置父元素的文本内容
     resetTextContent(parent);
+    // 清除 ContentReset 的 effect 标记
     // Clear ContentReset from the effect tag
     parentFiber.flags &= ~ContentReset;
   }
 
+  // 获取兄弟节点
   const before = getHostSibling(finishedWork);
   // We only have the top Fiber that was inserted but we need to recurse down its
   // children to find all the terminal nodes.
   if (isContainer) {
+    // 将放置节点插入或附加到容器中
     insertOrAppendPlacementNodeIntoContainer(finishedWork, before, parent);
   } else {
     insertOrAppendPlacementNode(finishedWork, before, parent);
@@ -2243,6 +2248,9 @@ function commitMutationEffectsOnFiber(finishedWork: Fiber, root: FiberRoot) {
     }
   }
 
+  // 下面的switch语句只关心放置、更新和删除。
+  // 为了避免需要为每个可能的位图值添加一个案例，我们从效果标签中删除了辅助效果并打开该值。 
+
   // The following switch statement is only concerned about placement,
   // updates, and deletions. To avoid needing to add a case for every possible
   // bitmap value, we remove the secondary effects from the effect tag and
@@ -2600,17 +2608,7 @@ function commitPassiveUnmountEffects_begin() {
         }
 
         if (deletedTreeCleanUpLevel >= 1) {
-          // A fiber was deleted from this parent fiber, but it's still part of
-          // the previous (alternate) parent fiber's list of children. Because
-          // children are a linked list, an earlier sibling that's still alive
-          // will be connected to the deleted fiber via its `alternate`:
-          //
-          //   live fiber
-          //   --alternate--> previous live fiber
-          //   --sibling--> deleted fiber
-          //
-          // We can't disconnect `alternate` on nodes that haven't been deleted
-          // yet, but we can disconnect the `sibling` and `child` pointers.
+          // A fiber was deleted from this parent fiber, but it's still part of the previous (alternate) parent fiber's list of children. Because children are a linked list, an earlier sibling that's still alive will be connected to the deleted fiber via its `alternate`:   live fiber   --alternate--> previous live fiber   --sibling--> deleted fiber We can't disconnect `alternate` on nodes that haven't been deleted yet, but we can disconnect the `sibling` and `child` pointers.
           const previousFiber = fiber.alternate;
           if (previousFiber !== null) {
             let detachedChild = previousFiber.child;
