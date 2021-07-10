@@ -519,7 +519,7 @@ function forceFrameRate(fps) {
 }
 
 const performWorkUntilDeadline = () => {
-  debugger;
+  // debugger;
   if (scheduledHostCallback !== null) {
     const currentTime = getCurrentTime();
     // Yield after `yieldInterval` ms, regardless of where we are in the vsync

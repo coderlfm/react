@@ -1927,6 +1927,15 @@ function dispatchAction<S, A>(
     next: (null: any),
   };
 
+  // const queue = {
+  //   dispatch: ƒ (),
+  //   interleaved: null,
+  //   lanes: 0,
+  //   lastRenderedReducer: ƒ basicStateReducer(state, action), // 更新的方法
+  //   lastRenderedState: 1,   // 上一次的值
+  //   pending: {lane: 1, action: 2, eagerReducer: null, eagerState: null, next: {…}},
+  // }
+
   const alternate = fiber.alternate;
   if (
     fiber === currentlyRenderingFiber ||
@@ -1955,6 +1964,7 @@ function dispatchAction<S, A>(
       if (interleaved === null) {
         // This is the first update. Create a circular list.
         update.next = update;
+        //在当前渲染结束时，此队列的交错更新将被转移到待处理队列。
         // At the end of the current render, this queue's interleaved updates will
         // be transfered to the pending queue.
         pushInterleavedQueue(queue);
@@ -1966,6 +1976,7 @@ function dispatchAction<S, A>(
     } else {
       const pending = queue.pending;
       if (pending === null) {
+        // 这是第一次更新。创建一个循环列表。
         // This is the first update. Create a circular list.
         update.next = update;
       } else {
@@ -1979,10 +1990,16 @@ function dispatchAction<S, A>(
       fiber.lanes === NoLanes &&
       (alternate === null || alternate.lanes === NoLanes)
     ) {
+
+      // 队列当前是空的，这意味着我们可以在进入渲染阶段之前急切地计算下一个状态。 
+      // 如果新状态与当前状态相同，我们或许可以完全退出。
+      
       // The queue is currently empty, which means we can eagerly compute the
       // next state before entering the render phase. If the new state is the
       // same as the current state, we may be able to bail out entirely.
-      const lastRenderedReducer = queue.lastRenderedReducer;
+      
+      // typeof action === 'function' ? action(state) : action;
+      const lastRenderedReducer = queue.lastRenderedReducer;  // basicStateReducer  内部会判断 是否为函数，如果为函数则会将上一次的值传进去，得到新的 状态 
       if (lastRenderedReducer !== null) {
         let prevDispatcher;
         if (__DEV__) {
@@ -1990,8 +2007,10 @@ function dispatchAction<S, A>(
           ReactCurrentDispatcher.current = InvalidNestedHooksDispatcherOnUpdateInDEV;
         }
         try {
-          const currentState: S = (queue.lastRenderedState: any);
-          const eagerState = lastRenderedReducer(currentState, action);
+          // 取到上一次的值
+          const currentState: S = (queue.lastRenderedState: any);       
+          // 将上一次的值，传进去，如果这次set 是一个函数，则需要上一次的值，否则直接返回新的值
+          const eagerState = lastRenderedReducer(currentState, action); 
 
           // 将急切计算的状态和用于计算它的reducer保存在更新对象上。
           // 如果 reducer 在我们进入渲染阶段时还没有改变，那么无需再次调用 reducer ，就可以使用 eager 状态。
@@ -2000,9 +2019,14 @@ function dispatchAction<S, A>(
           // it, on the update object. If the reducer hasn't changed by the
           // time we enter the render phase, then the eager state can be used
           // without calling the reducer again.
+
+          // 记录 reducer 和 state
           update.eagerReducer = lastRenderedReducer;
           update.eagerState = eagerState;
           if (is(eagerState, currentState)) {
+            // 快速路径。 我们可以在不安排 React 重新渲染的情况下退出。 
+            // 如果组件由于不同的原因重新渲染并且到那时 reducer 已经更改，我们仍然可能需要稍后重新调整此更新。
+            
             // Fast path. We can bail out without scheduling React to re-render.
             // It's still possible that we'll need to rebase this update later,
             // if the component re-renders for a different reason and by that

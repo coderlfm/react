@@ -21,11 +21,16 @@ let includesLegacySyncCallbacks: boolean = false;
 let isFlushingSyncQueue: boolean = false;
 
 export function scheduleSyncCallback(callback: SchedulerCallback) {
+  
+  // 将此回调推送到内部队列中。 我们将在下一个滴答声中刷新它们，
+  // 或者如果有东西调用 `flushSyncCallbackQueue` 则更早。
+
   // Push this callback into an internal queue. We'll flush these either in
   // the next tick, or earlier if something calls `flushSyncCallbackQueue`.
   if (syncQueue === null) {
     syncQueue = [callback];
   } else {
+    // 推送到现有队列。 不需要安排回调，因为我们在创建队列时已经安排了一个回调。
     // Push onto existing queue. Don't need to schedule a callback because
     // we already scheduled one when we created the queue.
     syncQueue.push(callback);

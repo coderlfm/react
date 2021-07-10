@@ -23,14 +23,15 @@ function App() {
 
   useEffect(() => {
     console.log('useEffect被执行');
-    
-console.log("%c'useEffect被执行 %c", "color:green",)
+
+    console.log("%c'useEffect被执行 %c", "color:green",)
     return () => {
       console.log('useEffect 卸载函数被执行');
     }
   }, [])
 
   const [flag, setFlag] = useState(true)
+  const [counter, setCounter] = useState(1)
 
   // 事件系统
   // return <EventDemo/>
@@ -41,8 +42,10 @@ console.log("%c'useEffect被执行 %c", "color:green",)
   return (
     <div className="App" onClick={() => {
       debugger;
-      setFlag(!flag)
+      // setFlag(!flag)
+      setCounter(counter + 1);
     }}>
+      <h4>counter:{counter}</h4>
       {
         flag
           ? (

@@ -675,10 +675,13 @@ export function isInterleavedUpdate(fiber: Fiber, lane: Lane) {
 function ensureRootIsScheduled(root: FiberRoot, currentTime: number) {
   const existingCallbackNode = root.callbackNode;
 
+  //检查是否有其他线路被其他工作占用。如果是，将它们标记为过期，
+  //所以我们知道下一个工作。
   // Check if any lanes are being starved by other work. If so, mark them as
   // expired so we know to work on those next.
   markStarvedLanesAsExpired(root, currentTime);
 
+  // 确定接下来的车道，以及它们的优先级。
   // Determine the next lanes to work on, and their priority.
   const nextLanes = getNextLanes(
     root,
@@ -696,10 +699,14 @@ function ensureRootIsScheduled(root: FiberRoot, currentTime: number) {
   }
 
   // We use the highest priority lane to represent the priority of the callback.
+  // 我们使用最高优先级通道来表示回调的优先级。  newCallbackPriority = 1
   const newCallbackPriority = getHighestPriorityLane(nextLanes);
 
+  // 检查是否有一个已存在的任务。我们也许可以重新利用它。
   // Check if there's an existing task. We may be able to reuse it.
   const existingCallbackPriority = root.callbackPriority;
+
+  // newCallbackPriority = 1
   if (existingCallbackPriority === newCallbackPriority) {
     if (__DEV__) {
       // If we're going to re-use an existing task, it needs to exist.
@@ -714,20 +721,29 @@ function ensureRootIsScheduled(root: FiberRoot, currentTime: number) {
         );
       }
     }
+
+    // 优先级没有改变。我们可以重用现有的任务。出口。 
     // The priority hasn't changed. We can reuse the existing task. Exit.
     return;
   }
 
   if (existingCallbackNode != null) {
+    // 取消现有的回调。我们将在下面安排一个新的。 
     // Cancel the existing callback. We'll schedule a new one below.
     cancelCallback(existingCallbackNode);
   }
 
+  // 安排一个新的回调
   // Schedule a new callback.
   let newCallbackNode;
-  if (newCallbackPriority === SyncLane) {
+  if (newCallbackPriority === SyncLane) {     // 判断是否同步赛道
+    // 特殊情况: 同步React回调 被安排在一个特殊的内部队列
     // Special case: Sync React callbacks are scheduled on a special
     // internal queue
+    /* 
+      export const LegacyRoot = 0;      // render
+      export const ConcurrentRoot = 1;  // conCurrentRoot 模式
+     */
     if (root.tag === LegacyRoot) {
       scheduleLegacySyncCallback(performSyncWorkOnRoot.bind(null, root));
     } else {
